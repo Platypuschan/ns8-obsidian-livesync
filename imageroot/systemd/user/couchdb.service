@@ -1,0 +1,41 @@
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+#
+# CouchDB server for the Self-hosted LiveSync plugin for Obsidian.
+# Most parts of this file come from podman-generate-systemd.
+#
+# CouchDB runs as its own user from the start (as in the plugin's compose
+# example). Started as root, the image entrypoint tries to chown everything
+# below /opt/couchdb, fails on the read-only livesync.ini and exits.
+#
+
+[Unit]
+Description=CouchDB for Obsidian LiveSync
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%E/state/environment
+WorkingDirectory=%E/state
+Restart=always
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/couchdb.pid %t/couchdb.ctr-id
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/couchdb.pid \
+    --cidfile %t/couchdb.ctr-id --cgroups=no-conmon \
+    --replace -d --name couchdb \
+    --user 5984:5984 \
+    --publish 127.0.0.1:${TCP_PORT}:5984 \
+    --volume couchdb-data:/opt/couchdb/data:Z \
+    --volume couchdb-etc:/opt/couchdb/etc/local.d:Z \
+    --volume %E/etc/livesync.ini:/opt/couchdb/etc/default.d/50-livesync.ini:ro,Z \
+    --env-file ./couchdb.env \
+    ${COUCHDB_IMAGE}
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/couchdb.ctr-id -t 30
+SyslogIdentifier=%u
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/couchdb.ctr-id
+PIDFile=%t/couchdb.pid
+Type=forking
+
+[Install]
+WantedBy=default.target

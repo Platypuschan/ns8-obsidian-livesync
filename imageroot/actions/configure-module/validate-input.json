@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Configure Obsidian LiveSync",
+    "$id": "http://nethserver.org/json-schema/task/input/obsidian-livesync/configure-module",
+    "description": "Configure the CouchDB server for Obsidian Self-hosted LiveSync",
+    "examples": [
+        {
+            "host": "livesync.domain.org",
+            "http2https": true,
+            "lets_encrypt": true,
+            "database": "obsidiannotes"
+        }
+    ],
+    "type": "object",
+    "required": [
+        "host",
+        "http2https",
+        "lets_encrypt"
+    ],
+    "properties": {
+        "host": {
+            "type": "string",
+            "description": "Host name for the server, like 'livesync.domain.org'",
+            "format": "hostname",
+            "pattern": "\\."
+        },
+        "lets_encrypt": {
+            "type": "boolean",
+            "title": "Let's Encrypt certificate",
+            "description": "Request a valid Let's Encrypt certificate."
+        },
+        "http2https": {
+            "type": "boolean",
+            "title": "HTTP to HTTPS redirection",
+            "description": "Redirect all the HTTP requests to HTTPS"
+        },
+        "database": {
+            "type": "string",
+            "title": "Database name",
+            "description": "CouchDB database of the vault; created if missing. Existing databases are never deleted.",
+            "pattern": "^[a-z][a-z0-9_$()+-]*$",
+            "maxLength": 238
+        }
+    }
+}
