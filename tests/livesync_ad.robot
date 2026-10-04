@@ -17,6 +17,9 @@ ${HOST}              livesync-ad.test
 ${samba_id}          ${EMPTY}
 ${module_id}         ${EMPTY}
 ${web_port}          ${EMPTY}
+# Upper limit for one NS8 task, so a stuck task fails the test with a clear
+# message instead of running into the job timeout
+${TASK_TIMEOUT}      600
 
 *** Keywords ***
 Prepare the AD suite
@@ -24,16 +27,17 @@ Prepare the AD suite
 
 Remove the AD suite modules
     IF    r'${module_id}' != ''
-        Execute Command    remove-module --no-preserve ${module_id}
+        Execute Command    timeout ${TASK_TIMEOUT} remove-module --no-preserve ${module_id}
     END
     IF    r'${samba_id}' != ''
-        Execute Command    remove-module --no-preserve ${samba_id}
+        Execute Command    timeout ${TASK_TIMEOUT} remove-module --no-preserve ${samba_id}
     END
 
 Run task
     [Arguments]    ${agent}    ${action}    ${payload}={}
-    ${output}    ${rc} =    Execute Command    api-cli run ${agent}/${action} --data '${payload}'
+    ${output}    ${rc} =    Execute Command    timeout ${TASK_TIMEOUT} api-cli run ${agent}/${action} --data '${payload}'
     ...    return_rc=True
+    Should Not Be Equal As Integers    ${rc}    124    ${action} did not finish within ${TASK_TIMEOUT} seconds
     Should Be Equal As Integers    ${rc}    0    ${action} failed: ${output}
     RETURN    ${output}
 
@@ -68,7 +72,7 @@ Admin auth
 
 *** Test Cases ***
 Provision a Samba AD domain
-    ${output}    ${rc} =    Execute Command    add-module ${SAMBA_IMAGE} 1
+    ${output}    ${rc} =    Execute Command    timeout ${TASK_TIMEOUT} add-module ${SAMBA_IMAGE} 1
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}    0    add-module samba failed: ${output}
     &{output} =    Evaluate    ast.literal_eval(r'''${output}''')    modules=ast
@@ -86,7 +90,7 @@ Create AD users and the group
     Run task    module/${samba_id}    add-group    {"group":"${GROUP}","users":["anna","bert.b","carl"]}
 
 Install and configure the module with AD sync
-    ${output}    ${rc} =    Execute Command    add-module ${IMAGE_URL} 1
+    ${output}    ${rc} =    Execute Command    timeout ${TASK_TIMEOUT} add-module ${IMAGE_URL} 1
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}    0    add-module failed: ${output}
     &{output} =    Evaluate    ast.literal_eval(r'''${output}''')    modules=ast
@@ -99,7 +103,7 @@ Install and configure the module with AD sync
     Should Be Equal    ${timer}    enabled
 
 An unknown group is rejected
-    ${output}    ${rc} =    Execute Command    api-cli run module/${module_id}/configure-module --data '{"host":"${HOST}","http2https":false,"lets_encrypt":false,"ad_enabled":true,"ad_domain":"${REALM}","ad_group":"no-such-group","ad_nested_groups":false}'
+    ${output}    ${rc} =    Execute Command    timeout ${TASK_TIMEOUT} api-cli run module/${module_id}/configure-module --data '{"host":"${HOST}","http2https":false,"lets_encrypt":false,"ad_enabled":true,"ad_domain":"${REALM}","ad_group":"no-such-group","ad_nested_groups":false}'
     ...    return_rc=True
     Should Not Be Equal As Integers    ${rc}    0
     Should Contain    ${output}    ad_group_not_found
@@ -131,7 +135,7 @@ Group members get accounts with their own database
     Set Suite Variable    ${bert_password}    ${bert['password']}
 
 Group-managed accounts cannot be deleted by hand
-    ${output}    ${rc} =    Execute Command    api-cli run module/${module_id}/remove-account --data '{"username":"anna","delete_database":true}'
+    ${output}    ${rc} =    Execute Command    timeout ${TASK_TIMEOUT} api-cli run module/${module_id}/remove-account --data '{"username":"anna","delete_database":true}'
     ...    return_rc=True
     Should Not Be Equal As Integers    ${rc}    0
     Should Contain    ${output}    account_managed_by_ad
