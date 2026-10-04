@@ -2,10 +2,16 @@
 Documentation     Sync accounts from an AD group, against a real Samba AD
 ...               domain provisioned in the test VM. Install scenario only:
 ...               the update scenario is covered by livesync.robot.
+...
+...               This suite runs first and leaves its modules installed (the
+...               VM is discarded afterwards). On Debian 13 a module whose UID
+...               was just freed by remove-module never gets its systemd user
+...               manager, so Samba must not reuse the UID of a removed
+...               module; module removal is tested in livesync.robot.
 Library           SSHLibrary
 Library           String
 Suite Setup       Prepare the AD suite
-Suite Teardown    Remove the AD suite modules
+Test Setup        Stop after a failed step
 
 *** Variables ***
 ${IMAGE_URL}         ghcr.io/platypuschan/obsidian-livesync:latest
@@ -25,12 +31,11 @@ ${TASK_TIMEOUT}      600
 Prepare the AD suite
     Skip If    r'${SCENARIO}' != 'install'    AD sync is tested in the install scenario only
 
-Remove the AD suite modules
-    IF    r'${module_id}' != ''
-        Execute Command    timeout ${TASK_TIMEOUT} remove-module --no-preserve ${module_id}
-    END
-    IF    r'${samba_id}' != ''
-        Execute Command    timeout ${TASK_TIMEOUT} remove-module --no-preserve ${samba_id}
+Stop after a failed step
+    # Every test builds on the previous ones; fail at once instead of
+    # waiting for more task timeouts
+    IF    r'${PREV TEST STATUS}' == 'FAIL'
+        Fail    Skipped because "${PREV TEST NAME}" failed
     END
 
 Run task

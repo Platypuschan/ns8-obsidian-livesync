@@ -166,7 +166,7 @@ covers two scenarios:
   and update it to the image under test. Before the first release there is
   nothing to update from, so this scenario is skipped with a notice.
 
-`tests/livesync_ad.robot` (install scenario) provisions a Samba AD domain
+`tests/00__ad_sync.robot` (install scenario, runs first) provisions a Samba AD domain
 (`ghcr.io/nethserver/samba`) in the test VM and checks the AD account sync:
 accounts for group members, lock-out and kept database after leaving the
 group, rejoining, database reset and deletion.
