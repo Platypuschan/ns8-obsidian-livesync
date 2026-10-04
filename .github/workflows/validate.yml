@@ -97,10 +97,10 @@ jobs:
             exit 1
           fi
 
-      - name: Install PyYAML used by the NS8 agent environment
-        run: python3 -m pip install --user --break-system-packages PyYAML==6.0.3
+      - name: Install the libraries of the NS8 agent environment used by the tests
+        run: python3 -m pip install --user --break-system-packages PyYAML==6.0.3 ldap3==2.9.1
 
-      - name: Test configuration, migration and smarthost integration
+      - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
   ui:

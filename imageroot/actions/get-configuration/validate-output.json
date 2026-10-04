@@ -13,9 +13,16 @@
                 {
                     "username": "livesync",
                     "password": "secret",
-                    "database": "obsidiannotes"
+                    "database": "obsidiannotes",
+                    "source": "manual",
+                    "enabled": true
                 }
-            ]
+            ],
+            "ad_enabled": false,
+            "ad_domain": "",
+            "ad_group": "",
+            "ad_nested_groups": false,
+            "ad_last_sync": null
         }
     ],
     "type": "object",
@@ -24,7 +31,12 @@
         "http2https",
         "lets_encrypt",
         "url",
-        "accounts"
+        "accounts",
+        "ad_enabled",
+        "ad_domain",
+        "ad_group",
+        "ad_nested_groups",
+        "ad_last_sync"
     ],
     "properties": {
         "host": {
@@ -60,9 +72,38 @@
                     },
                     "database": {
                         "type": "string"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "manual",
+                            "ad"
+                        ]
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "False for an AD account whose user left the group"
                     }
                 }
             }
+        },
+        "ad_enabled": {
+            "type": "boolean"
+        },
+        "ad_domain": {
+            "type": "string"
+        },
+        "ad_group": {
+            "type": "string"
+        },
+        "ad_nested_groups": {
+            "type": "boolean"
+        },
+        "ad_last_sync": {
+            "type": [
+                "object",
+                "null"
+            ]
         }
     }
 }

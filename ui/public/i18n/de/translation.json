@@ -49,7 +49,31 @@
         "username_invalid": "Muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern, . _ und - enthalten (höchstens 64 Zeichen); „admin“ ist reserviert",
         "username_exists": "Ein Konto mit diesem Namen gibt es schon",
         "create": "Anlegen",
-        "cancel": "Abbrechen"
+        "cancel": "Abbrechen",
+        "ad_enabled": "Konten aus einer AD-Gruppe",
+        "ad_description": "Jedes aktive Mitglied der Gruppe bekommt ein Sync-Konto mit eigener Datenbank und erzeugtem Passwort. Wer die Gruppe verlässt oder im AD deaktiviert wird, kann sich nicht mehr anmelden; seine Datenbank bleibt erhalten. Der Abgleich läuft alle 5 Minuten.",
+        "ad_domain": "Benutzerdomäne",
+        "ad_domain_placeholder": "Active-Directory-Domäne wählen",
+        "ad_group": "AD-Gruppe",
+        "ad_nested_groups": "Mitglieder verschachtelter Gruppen einbeziehen",
+        "ad_domain_required": "Eine Benutzerdomäne wählen",
+        "ad_group_required": "Den Namen der AD-Gruppe eingeben",
+        "ad_domain_unavailable": "Diese Benutzerdomäne ist nicht verfügbar oder kein Active Directory",
+        "ad_group_not_found": "Die Gruppe wurde in dieser Domäne nicht gefunden",
+        "ad_sync_now": "Jetzt mit AD abgleichen",
+        "ad_sync_status": "Letzter Abgleich mit der AD-Gruppe: {time}, {members} Mitglieder",
+        "ad_sync_failed": "Der letzte Abgleich mit der AD-Gruppe ist fehlgeschlagen",
+        "ad_sync_disabled": "Konten aus einer AD-Gruppe sind nicht aktiviert",
+        "source_ad": "AD",
+        "source_manual": "Manuell",
+        "account_locked": "Gesperrt: nicht in der AD-Gruppe",
+        "account_locked_tag": "Gesperrt",
+        "account_managed_by_ad": "Dieses Konto gehört zur AD-Gruppe; stattdessen den Benutzer aus der Gruppe entfernen",
+        "account_disabled": "Das Konto ist gesperrt",
+        "username_not_found": "Das Konto gibt es nicht",
+        "reset_database": "Datenbank zurücksetzen",
+        "reset_database_title": "Datenbank {database} zurücksetzen",
+        "reset_database_description": "Die Datenbank wird durch eine leere mit gleichem Namen ersetzt; Konto und Passwort bleiben. In Obsidian muss der Vault danach von einem Gerät neu hochgeladen werden (in Self-hosted LiveSync: die Remote-Datenbank von diesem Gerät aus neu aufbauen)."
     },
     "common": {
         "required": "erforderlich",
@@ -85,7 +109,10 @@
         "get-configuration": "Konfiguration abrufen",
         "get-name": "Name abrufen",
         "add-account": "Sync-Konto hinzufügen",
-        "remove-account": "Sync-Konto löschen"
+        "remove-account": "Sync-Konto löschen",
+        "sync-accounts": "Konten mit AD abgleichen",
+        "reset-database": "Datenbank zurücksetzen",
+        "list-user-domains": "Benutzerdomänen auflisten"
     },
     "task": {
         "cannot_create_task": "{task} kann nicht erstellt werden"

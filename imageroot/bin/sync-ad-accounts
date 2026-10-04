@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Run by livesync-ad-sync.timer: match the sync accounts to the AD group.
+
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "pypkg"))
+import livesync_ad
+import livesync_setup
+
+try:
+    report = livesync_ad.run_sync(os.environ.get("AGENT_STATE_DIR", "."))
+except (livesync_ad.ADError, livesync_setup.ProvisioningError) as error:
+    print(f"AD account sync failed: {error}", file=sys.stderr)
+    sys.exit(1)
+if report and any(report[key] for key in ("created", "enabled", "disabled", "skipped")):
+    print("AD account sync: " + json.dumps(report), file=sys.stderr)

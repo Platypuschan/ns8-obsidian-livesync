@@ -43,7 +43,7 @@ buildah add "${container}" ui/dist /ui
 buildah config --entrypoint=/ \
 	--label="org.opencontainers.image.source=${repository_source}" \
 	--label="org.opencontainers.image.revision=${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}" \
-	--label="org.nethserver.authorizations=traefik@node:routeadm" \
+	--label="org.nethserver.authorizations=traefik@node:routeadm cluster:accountconsumer" \
 	--label="org.nethserver.tcp-ports-demand=1" \
 	--label="org.nethserver.rootfull=0" \
 	--label="org.nethserver.images=docker.io/library/couchdb:${COUCHDB_TAG}" \

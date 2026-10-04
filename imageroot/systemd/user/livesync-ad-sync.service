@@ -1,0 +1,13 @@
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Sync the Obsidian LiveSync accounts with the AD group
+After=couchdb.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%E/state
+ExecStart=/usr/local/bin/runagent sync-ad-accounts
+SyslogIdentifier=%u

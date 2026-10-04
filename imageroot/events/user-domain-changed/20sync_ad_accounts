@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Re-run the AD account sync when the configured account domain changes
+# (e.g. it was added after a restore into another cluster).
+
+import json
+import os
+import sys
+
+import agent
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_ad
+import livesync_setup
+
+try:
+    event = json.load(sys.stdin)
+except (json.JSONDecodeError, TypeError):
+    sys.exit(0)
+
+settings = livesync_ad.configured()
+if settings is None or settings[0] not in event.get("domains", []):
+    sys.exit(0)
+
+agent.bind_user_domains([settings[0]])
+try:
+    livesync_ad.run_sync()
+except (livesync_ad.ADError, livesync_setup.ProvisioningError) as error:
+    # The timer retries; an unavailable domain must not break the event.
+    print(f"AD account sync failed: {error}", file=sys.stderr)

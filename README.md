@@ -18,7 +18,8 @@ What the module adds on top of a plain CouchDB container:
 - sync accounts for the plugin, each with a database of its own: an account
   is administrator of its database only and has no server-wide rights. The
   first account `livesync` with database `obsidiannotes` is created on the
-  first configuration; more can be added and deleted on the settings page;
+  first configuration; more can be added and deleted on the settings page,
+  or created automatically for the members of an AD group;
 - a Traefik route with optional Let's Encrypt certificate;
 - NS8 backup and restore of the databases, the CouchDB runtime configuration
   and both credentials.
@@ -72,6 +73,45 @@ api-cli run module/obsidian-livesync1/add-account --data '{"username": "alice", 
 api-cli run module/obsidian-livesync1/remove-account --data '{"username": "alice", "delete_database": false}'
 ```
 
+## Accounts from an AD group
+
+Instead of (or next to) manual accounts, the members of a group of an NS8
+Active Directory account domain can get accounts automatically. Enable
+*Accounts from an AD group* on the settings page and choose the domain and
+the group (optionally including nested groups).
+
+- Every enabled member gets an account named after the AD user name
+  (lower case) with the database `notes-<user name>` (`.` becomes `_`) and a
+  generated password, shown on the settings page. The AD password is not
+  used: Obsidian stores the sync password on every device.
+- A user who leaves the group, or whose AD account is disabled, is locked
+  out: the CouchDB user is deleted and the account is shown as locked. The
+  database is kept. A user who joins again gets the same database and a new
+  password.
+- Locked accounts can be deleted, with or without their database. Accounts
+  of current group members can't be deleted here; remove the user from the
+  group instead.
+- The sync runs every 5 minutes, after saving the settings, and on *Sync
+  with AD now*. If the domain can't be read, nothing changes and the
+  settings page shows the error.
+- Turning the option off keeps the active accounts working as manual ones.
+
+```
+api-cli run module/obsidian-livesync1/configure-module --data '{"host": "livesync.example.org", "http2https": true, "lets_encrypt": true, "ad_enabled": true, "ad_domain": "ad.example.org", "ad_group": "obsidian-users", "ad_nested_groups": false}'
+api-cli run module/obsidian-livesync1/sync-accounts
+```
+
+## Reset a database
+
+*Reset database* replaces an account's database with an empty one of the
+same name; the account and its password stay. Afterwards upload the vault
+again from one device: in Self-hosted LiveSync, rebuild the remote database
+from that device; the other devices then fetch it again.
+
+```
+api-cli run module/obsidian-livesync1/reset-database --data '{"username": "alice"}'
+```
+
 ## Connect Obsidian
 
 In Obsidian, install *Self-hosted LiveSync*, choose CouchDB as remote type
@@ -118,15 +158,20 @@ remove-module --no-preserve obsidian-livesync1
 
 ## Testing
 
-The QEMU test suite (`tests/livesync.robot`) runs on Rocky Linux 9 and
-Debian 13 for two scenarios:
+The QEMU test suites run on Rocky Linux 9 and Debian 13. `tests/livesync.robot`
+covers two scenarios:
 
 - `install`: install the image under test.
 - `update`: install the last published release (`.github/scripts/previous-release`)
   and update it to the image under test. Before the first release there is
   nothing to update from, so this scenario is skipped with a notice.
 
-Unit tests:
+`tests/livesync_ad.robot` (install scenario) provisions a Samba AD domain
+(`ghcr.io/nethserver/samba`) in the test VM and checks the AD account sync:
+accounts for group members, lock-out and kept database after leaving the
+group, rejoining, database reset and deletion.
+
+Unit tests (they need `ldap3`, which the NS8 agent environment provides):
 
 ```
 python3 -m unittest discover -s tests -p 'test_*.py' -v

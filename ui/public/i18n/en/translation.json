@@ -58,7 +58,31 @@
     "username_invalid": "Must start with a lowercase letter and contain only lowercase letters, digits, . _ and - (at most 64 characters); \"admin\" is reserved",
     "username_exists": "An account with this name already exists",
     "create": "Create",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "ad_enabled": "Accounts from an AD group",
+    "ad_description": "Every enabled member of the group gets a sync account with a database of its own and a generated password. Members who leave the group, or whose AD account is disabled, can no longer sign in; their database is kept. The sync runs every 5 minutes.",
+    "ad_domain": "Account domain",
+    "ad_domain_placeholder": "Choose an Active Directory domain",
+    "ad_group": "AD group",
+    "ad_nested_groups": "Include members of nested groups",
+    "ad_domain_required": "Choose an account domain",
+    "ad_group_required": "Enter the name of the AD group",
+    "ad_domain_unavailable": "This account domain is not available or is not an Active Directory",
+    "ad_group_not_found": "The group was not found in this domain",
+    "ad_sync_now": "Sync with AD now",
+    "ad_sync_status": "Last sync with the AD group: {time}, {members} members",
+    "ad_sync_failed": "The last sync with the AD group failed",
+    "ad_sync_disabled": "Accounts from an AD group are not enabled",
+    "source_ad": "AD",
+    "source_manual": "Manual",
+    "account_locked": "Locked: not in the AD group",
+    "account_locked_tag": "Locked",
+    "account_managed_by_ad": "This account belongs to the AD group; remove the user from the group instead",
+    "account_disabled": "The account is locked",
+    "username_not_found": "The account does not exist",
+    "reset_database": "Reset database",
+    "reset_database_title": "Reset database {database}",
+    "reset_database_description": "The database is replaced by an empty one with the same name; the account and its password stay. In Obsidian, the vault must then be uploaded again from one device (in Self-hosted LiveSync: rebuild the remote database from this device)."
   },
   "about": {
     "title": "About"
@@ -76,7 +100,10 @@
     "list-backups": "List backups",
     "list-installed-modules": "List installed modules",
     "add-account": "Add sync account",
-    "remove-account": "Delete sync account"
+    "remove-account": "Delete sync account",
+    "sync-accounts": "Sync accounts with AD",
+    "reset-database": "Reset database",
+    "list-user-domains": "List account domains"
   },
   "error": {
     "error": "Error",
