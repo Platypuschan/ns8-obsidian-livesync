@@ -63,7 +63,14 @@ class FakeHandler(http.server.BaseHTTPRequestHandler):
         if path == "/_up":
             return self.reply(200, {"status": "ok"})
         if path.startswith("/_users/org.couchdb.user:"):
-            name = path.rsplit(":", 1)[1]
+            name = path.split("?")[0].rsplit(":", 1)[1]
+            if self.command == "DELETE":
+                if name not in server.users:
+                    return self.reply(404, {"error": "not_found"})
+                if f"rev={server.users[name]['_rev']}" not in path:
+                    return self.reply(409, {"error": "conflict"})
+                del server.users[name]
+                return self.reply(200, {"ok": True})
             if self.command == "GET":
                 if name not in server.users:
                     return self.reply(404, {"error": "not_found"})
@@ -76,6 +83,10 @@ class FakeHandler(http.server.BaseHTTPRequestHandler):
             return self.reply(201, {"ok": True})
         parts = path.strip("/").split("/")
         database = parts[0]
+        if len(parts) == 1 and self.command == "DELETE":
+            if server.databases.pop(database, None) is None:
+                return self.reply(404, {"error": "not_found"})
+            return self.reply(200, {"ok": True})
         if len(parts) == 1 and self.command == "PUT":
             if database in server.databases:
                 return self.reply(412, {"error": "file_exists"})
@@ -90,7 +101,11 @@ class FakeHandler(http.server.BaseHTTPRequestHandler):
             return self.reply(200, {"ok": True})
         return self.reply(400, {"error": "unexpected"})
 
-    do_GET = do_PUT = handle_any
+    do_GET = do_PUT = do_DELETE = handle_any
+
+
+def account(username, password, database):
+    return {"username": username, "password": password, "database": database}
 
 
 class ProvisioningTest(unittest.TestCase):
@@ -105,7 +120,7 @@ class ProvisioningTest(unittest.TestCase):
         self.client = livesync_setup.CouchDB(self.server.url, *self.ADMIN)
 
     def test_creates_account_database_and_access(self):
-        livesync_setup.provision(self.client, "obsidiannotes", "livesync", "pw1")
+        livesync_setup.provision(self.client, [account("livesync", "pw1", "obsidiannotes")])
 
         user = self.server.users["livesync"]
         self.assertEqual(user["password"], "pw1")
@@ -116,11 +131,11 @@ class ProvisioningTest(unittest.TestCase):
         self.assertEqual(security["members"]["names"], ["livesync"])
 
     def test_repeated_run_keeps_existing_access_and_roles(self):
-        livesync_setup.provision(self.client, "obsidiannotes", "livesync", "pw1")
+        livesync_setup.provision(self.client, [account("livesync", "pw1", "obsidiannotes")])
         self.server.users["livesync"]["roles"] = ["extra"]
         self.server.databases["obsidiannotes"]["members"]["names"].append("other")
 
-        livesync_setup.provision(self.client, "obsidiannotes", "livesync", "pw2")
+        livesync_setup.provision(self.client, [account("livesync", "pw2", "obsidiannotes")])
 
         user = self.server.users["livesync"]
         self.assertEqual(user["password"], "pw2")
@@ -134,10 +149,35 @@ class ProvisioningTest(unittest.TestCase):
         ]
         self.assertEqual(len(security_writes), 1, "unchanged security must not be rewritten")
 
-    def test_new_database_keeps_the_old_one(self):
-        livesync_setup.provision(self.client, "first", "livesync", "pw")
-        livesync_setup.provision(self.client, "second", "livesync", "pw")
-        self.assertEqual(set(self.server.databases), {"first", "second"})
+    def test_accounts_only_reach_their_own_database(self):
+        livesync_setup.provision(
+            self.client, [account("alice", "a", "alice-db"), account("bob", "b", "bob-db")]
+        )
+        self.assertEqual(self.server.databases["alice-db"]["admins"]["names"], ["alice"])
+        self.assertEqual(self.server.databases["bob-db"]["members"]["names"], ["bob"])
+
+    def test_remove_account_keeps_database_without_access(self):
+        alice = account("alice", "a", "alice-db")
+        livesync_setup.provision(self.client, [alice])
+        self.server.databases["alice-db"]["members"]["names"].append("other")
+        livesync_setup.remove_account(self.client, alice, delete_data=False)
+        self.assertNotIn("alice", self.server.users)
+        security = self.server.databases["alice-db"]
+        self.assertEqual(security["admins"]["names"], [])
+        self.assertEqual(security["members"]["names"], ["other"])
+
+    def test_remove_account_with_database(self):
+        alice = account("alice", "a", "alice-db")
+        livesync_setup.provision(self.client, [alice])
+        livesync_setup.remove_account(self.client, alice, delete_data=True)
+        self.assertNotIn("alice", self.server.users)
+        self.assertNotIn("alice-db", self.server.databases)
+
+    def test_remove_is_idempotent(self):
+        # A retry after a partly failed removal must not fail
+        alice = account("alice", "a", "alice-db")
+        livesync_setup.remove_account(self.client, alice, delete_data=True)
+        livesync_setup.remove_account(self.client, alice, delete_data=False)
 
     def test_wrong_admin_password_fails_clearly(self):
         client = livesync_setup.CouchDB(self.server.url, "admin", "wrong")
@@ -164,36 +204,101 @@ class CredentialsTest(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.state = directory.name
 
+    def path(self, name):
+        return os.path.join(self.state, name)
+
     def mode(self, name):
-        return stat.S_IMODE(os.stat(os.path.join(self.state, name)).st_mode)
+        return stat.S_IMODE(os.stat(self.path(name)).st_mode)
 
-    def test_generates_private_credentials_once(self):
-        admin, sync = livesync_setup.ensure_credentials(self.state)
+    def test_generates_private_admin_once(self):
+        admin = livesync_setup.ensure_admin_credentials(self.state)
         self.assertEqual(admin[0], "admin")
-        self.assertEqual(sync[0], "livesync")
         self.assertGreaterEqual(len(admin[1]), 32)
-        self.assertNotEqual(admin[1], sync[1])
         self.assertEqual(self.mode("couchdb.env"), 0o600)
-        self.assertEqual(self.mode("sync.env"), 0o600)
+        self.assertEqual(livesync_setup.ensure_admin_credentials(self.state), admin)
 
-        self.assertEqual(livesync_setup.ensure_credentials(self.state), (admin, sync))
-        self.assertEqual(livesync_setup.read_sync_credentials(self.state), sync)
-
-    def test_keeps_restored_credentials(self):
-        path = os.path.join(self.state, "couchdb.env")
-        with open(path, "w", encoding="utf-8") as stream:
+    def test_keeps_restored_admin(self):
+        with open(self.path("couchdb.env"), "w", encoding="utf-8") as stream:
             stream.write("COUCHDB_USER=admin\nCOUCHDB_PASSWORD=restored=value\n")
-        os.chmod(path, 0o644)
-        admin, _ = livesync_setup.ensure_credentials(self.state)
-        self.assertEqual(admin, ("admin", "restored=value"))
+        os.chmod(self.path("couchdb.env"), 0o644)
+        self.assertEqual(livesync_setup.ensure_admin_credentials(self.state), ("admin", "restored=value"))
         self.assertEqual(self.mode("couchdb.env"), 0o600)
 
     def test_env_file_has_no_quoting(self):
-        livesync_setup.ensure_credentials(self.state)
-        with open(os.path.join(self.state, "couchdb.env"), encoding="utf-8") as stream:
+        livesync_setup.ensure_admin_credentials(self.state)
+        with open(self.path("couchdb.env"), encoding="utf-8") as stream:
             content = stream.read()
         # podman --env-file takes values literally
         self.assertRegex(content, r"\ACOUCHDB_USER=admin\nCOUCHDB_PASSWORD=[A-Za-z0-9_-]+\n\Z")
+
+    def test_default_account_is_created_once(self):
+        accounts = livesync_setup.ensure_accounts("vault", self.state)
+        self.assertEqual(len(accounts), 1)
+        self.assertEqual(accounts[0]["username"], "livesync")
+        self.assertEqual(accounts[0]["database"], "vault")
+        self.assertGreaterEqual(len(accounts[0]["password"]), 32)
+        self.assertEqual(self.mode("accounts.json"), 0o600)
+        self.assertEqual(livesync_setup.ensure_accounts("other", self.state), accounts)
+
+    def test_deleting_all_accounts_is_respected(self):
+        livesync_setup.ensure_accounts(None, self.state)
+        livesync_setup.write_accounts([], self.state)
+        self.assertEqual(livesync_setup.ensure_accounts(None, self.state), [])
+
+    def test_migrates_the_0_1_0_account(self):
+        with open(self.path("sync.env"), "w", encoding="utf-8") as stream:
+            stream.write("LIVESYNC_USER=livesync\nLIVESYNC_PASSWORD=old-secret\n")
+        accounts = livesync_setup.ensure_accounts("mynotes", self.state)
+        self.assertEqual(accounts, [account("livesync", "old-secret", "mynotes")])
+        self.assertFalse(os.path.exists(self.path("sync.env")))
+        self.assertFalse(livesync_setup.migrate_legacy_account("mynotes", self.state))
+
+    def test_migration_does_not_overwrite_existing_accounts(self):
+        livesync_setup.write_accounts([account("alice", "a", "alice-db")], self.state)
+        with open(self.path("sync.env"), "w", encoding="utf-8") as stream:
+            stream.write("LIVESYNC_USER=livesync\nLIVESYNC_PASSWORD=old\n")
+        self.assertTrue(livesync_setup.migrate_legacy_account(None, self.state))
+        self.assertEqual(livesync_setup.read_accounts(self.state), [account("alice", "a", "alice-db")])
+
+    def test_lock_is_reentrant_across_calls(self):
+        with livesync_setup.accounts_lock(self.state):
+            pass
+        with livesync_setup.accounts_lock(self.state):
+            livesync_setup.ensure_accounts(None, self.state)
+
+
+class AccountValidationTest(unittest.TestCase):
+    EXISTING = [account("livesync", "x", "obsidiannotes")]
+
+    def errors(self, username, database):
+        return [
+            (error["parameter"], error["error"])
+            for error in livesync_setup.account_errors(self.EXISTING, username, database)
+        ]
+
+    def test_valid_new_account(self):
+        self.assertEqual(self.errors("alice", "alice-notes"), [])
+
+    def test_duplicates_and_reserved_names(self):
+        self.assertEqual(self.errors("livesync", "other"), [("username", "username_exists")])
+        self.assertEqual(self.errors("alice", "obsidiannotes"), [("database", "database_in_use")])
+        self.assertEqual(self.errors("admin", "x"), [("username", "username_invalid")])
+
+    def test_invalid_names(self):
+        for name in ("", "Alice", "_alice", "a:b", "1a", "a" * 65):
+            self.assertIn(("username", "username_invalid"), self.errors(name, "db"), name)
+        self.assertEqual(self.errors("alice", "Bad"), [("database", "database_pattern")])
+
+    def test_schema_uses_the_same_username_pattern(self):
+        schema = json.loads(
+            (ROOT / "imageroot/actions/add-account/validate-input.json").read_text()
+        )
+        self.assertEqual(
+            schema["properties"]["username"]["pattern"], livesync_setup.USERNAME_PATTERN.pattern
+        )
+        self.assertEqual(
+            schema["properties"]["database"]["pattern"], livesync_setup.DATABASE_PATTERN.pattern
+        )
 
 
 class DatabaseNameTest(unittest.TestCase):

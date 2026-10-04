@@ -15,9 +15,10 @@ maximum request size and 50 MB maximum document size. They are in
 What the module adds on top of a plain CouchDB container:
 
 - a CouchDB administrator with a generated password;
-- a separate `livesync` account for the plugin. It is administrator of the
-  vault database only and has no server-wide rights;
-- the vault database (default `obsidiannotes`), created on configuration;
+- sync accounts for the plugin, each with a database of its own: an account
+  is administrator of its database only and has no server-wide rights. The
+  first account `livesync` with database `obsidiannotes` is created on the
+  first configuration; more can be added and deleted on the settings page;
 - a Traefik route with optional Let's Encrypt certificate;
 - NS8 backup and restore of the databases, the CouchDB runtime configuration
   and both credentials.
@@ -43,41 +44,43 @@ trusted one for this host).
 The same configuration from the command line:
 
 ```
-api-cli run module/obsidian-livesync1/configure-module --data '{"host": "livesync.example.org", "http2https": true, "lets_encrypt": true, "database": "obsidiannotes"}'
+api-cli run module/obsidian-livesync1/configure-module --data '{"host": "livesync.example.org", "http2https": true, "lets_encrypt": true}'
 ```
 
-Changing `database` later creates a new, empty database and gives the
-`livesync` account access to it. Existing databases are never deleted.
+`database` (optional) only names the database of the first account and is
+ignored once the accounts exist.
+
+## Sync accounts
+
+The **Settings** page lists the sync accounts below the server settings,
+with the Server URI and, per account, user name, password (shown on click)
+and database. Use one database per vault.
+
+- **Add account**: enter a user name and a database name; the password is
+  generated. A database name that is not in use by another account is
+  created, or taken over if it already exists (for example after an account
+  was deleted without its database).
+- **Delete**: removes the CouchDB user. Its database is kept and then only
+  reachable by the administrator, unless *Also delete the database* is
+  checked.
+
+The same from the command line:
+
+```
+api-cli run module/obsidian-livesync1/get-configuration
+api-cli run module/obsidian-livesync1/add-account --data '{"username": "alice", "database": "alice-notes"}'
+api-cli run module/obsidian-livesync1/remove-account --data '{"username": "alice", "delete_database": false}'
+```
 
 ## Connect Obsidian
 
-After saving, the **Settings** page shows a *Connection for Self-hosted
-LiveSync* panel with the values for the plugin:
-
-| Plugin field | Value |
-| --- | --- |
-| Server URI | `https://<host>` |
-| Username | `livesync` |
-| Password | shown in the panel |
-| Database name | the configured database |
-
 In Obsidian, install *Self-hosted LiveSync*, choose CouchDB as remote type
-and enter these values (see the plugin's
+and enter the Server URI (`https://<host>`) and the user name, password and
+database of one account (see the plugin's
 [quick setup](https://github.com/vrtmrz/obsidian-livesync/blob/main/docs/quick_setup.md)).
 Enable end-to-end encryption in the plugin. Its passphrase is never sent to
 this server and cannot be recovered here. After the first device works,
 generate a Setup URI in the plugin to add more devices.
-
-The same values from the command line:
-
-```
-api-cli run module/obsidian-livesync1/get-configuration
-```
-
-Each vault needs its own database. To sync another vault with the same
-account, configure that database name in the module (the account keeps
-access to the earlier ones), or create the database in Fauxton and add
-`livesync` to its admins.
 
 ## Administration
 
@@ -91,7 +94,7 @@ runagent -m obsidian-livesync1 cat couchdb.env
 The administrator password is generated on the first configuration and only
 read by CouchDB on its first start; changing `couchdb.env` later has no
 effect. Change it in Fauxton instead and update `couchdb.env` to match, so
-that `configure-module` can still provision the database.
+that the module can still manage the accounts.
 
 Settings changed in Fauxton are written to the `couchdb-etc` volume and take
 precedence over `livesync.ini`.
@@ -100,11 +103,12 @@ precedence over `livesync.ini`.
 
 The NS8 backup includes the volumes `couchdb-data` (databases) and
 `couchdb-etc` (runtime configuration with the hashed administrator password),
-plus `couchdb.env` and `sync.env` (credentials). CouchDB writes its database
+plus `couchdb.env` and `accounts.json` (credentials). CouchDB writes its database
 files append-only, so the running server can be backed up
 ([CouchDB documentation](https://docs.couchdb.org/en/stable/maintenance/backups.html)).
 A restored instance keeps the same credentials, so the Obsidian clients only
-need the new host name if it changed.
+need the new host name if it changed. Release 0.1.0 kept its single account
+in `sync.env`; updates and restores move it into `accounts.json`.
 
 ## Uninstall
 

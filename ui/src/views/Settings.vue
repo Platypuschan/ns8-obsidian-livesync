@@ -61,17 +61,6 @@
                 $t("settings.enabled")
               }}</template>
             </cv-toggle>
-            <cv-text-input
-              :label="$t('settings.database')"
-              :helper-text="$t('settings.database_helper')"
-              placeholder="obsidiannotes"
-              v-model.trim="database"
-              class="mg-bottom"
-              :invalid-message="$t(error.database)"
-              :disabled="loading.getConfiguration || loading.configureModule"
-              ref="database"
-            >
-            </cv-text-input>
             <cv-row v-if="error.configureModule">
               <cv-column>
                 <NsInlineNotification
@@ -93,11 +82,12 @@
         </cv-tile>
       </cv-column>
     </cv-row>
-    <cv-row v-if="connection.url">
+    <!-- sync accounts -->
+    <cv-row v-if="url">
       <cv-column>
         <cv-tile light>
-          <h4 class="mg-bottom">{{ $t("settings.connection_title") }}</h4>
-          <p class="mg-bottom">{{ $t("settings.connection_description") }}</p>
+          <h4 class="mg-bottom">{{ $t("settings.accounts_title") }}</h4>
+          <p class="mg-bottom">{{ $t("settings.accounts_description") }}</p>
           <NsInlineNotification
             v-if="!isLetsEncryptEnabled"
             kind="warning"
@@ -108,36 +98,156 @@
           <cv-text-input
             id="livesync-uri"
             :label="$t('settings.server_uri')"
-            :value="connection.url"
+            :value="url"
             readonly
             class="mg-bottom"
           />
-          <cv-text-input
-            id="livesync-username"
-            :label="$t('settings.username')"
-            :value="connection.username"
-            readonly
+          <NsInlineNotification
+            v-if="error.removeAccount"
+            kind="error"
+            :title="$t('action.remove-account')"
+            :description="error.removeAccount"
+            :showCloseButton="false"
+          />
+          <NsEmptyState
+            v-if="!accounts.length"
+            :title="$t('settings.no_accounts')"
             class="mg-bottom"
           />
-          <cv-text-input
-            id="livesync-password"
-            :label="$t('settings.password')"
-            :value="connection.password"
-            type="password"
-            readonly
+          <div
+            v-for="account in accounts"
+            :key="account.username"
+            class="account mg-bottom"
+          >
+            <cv-text-input
+              :id="'account-username-' + account.username"
+              :label="$t('settings.username')"
+              :value="account.username"
+              readonly
+            />
+            <cv-text-input
+              :id="'account-password-' + account.username"
+              :label="$t('settings.password')"
+              :value="account.password"
+              type="password"
+              readonly
+            />
+            <cv-text-input
+              :id="'account-database-' + account.username"
+              :label="$t('settings.database_name')"
+              :value="account.database"
+              readonly
+            />
+            <NsButton
+              kind="danger--ghost"
+              :icon="TrashCan20"
+              :disabled="loading.getConfiguration"
+              @click="showRemoveModal(account)"
+              >{{ $t("settings.remove_account") }}</NsButton
+            >
+          </div>
+          <NsButton
+            kind="secondary"
+            :icon="Add20"
+            :disabled="loading.getConfiguration"
             class="mg-bottom"
-          />
-          <cv-text-input
-            id="livesync-database"
-            :label="$t('settings.database_name')"
-            :value="connection.database"
-            readonly
-            class="mg-bottom"
-          />
+            @click="showAddModal"
+            >{{ $t("settings.add_account") }}</NsButton
+          >
           <p>{{ $t("settings.passphrase_hint") }}</p>
         </cv-tile>
       </cv-column>
     </cv-row>
+    <!-- add account -->
+    <NsModal
+      size="default"
+      :visible="isAddModalShown"
+      :isLoading="loading.addAccount"
+      :primary-button-disabled="loading.addAccount"
+      :autoHideOff="loading.addAccount"
+      @modal-hidden="isAddModalShown = false"
+      @secondary-click="isAddModalShown = false"
+      @primary-click="addAccount"
+    >
+      <template slot="title">{{ $t("settings.add_account") }}</template>
+      <template slot="content">
+        <cv-form @submit.prevent="addAccount">
+          <cv-text-input
+            id="new-account-username"
+            :label="$t('settings.username')"
+            :helper-text="$t('settings.username_helper')"
+            v-model.trim="newAccount.username"
+            :invalid-message="$t(error.username)"
+            :disabled="loading.addAccount"
+            class="mg-bottom"
+            ref="username"
+          />
+          <cv-text-input
+            id="new-account-database"
+            :label="$t('settings.database_name')"
+            :helper-text="$t('settings.database_helper')"
+            v-model.trim="newAccount.database"
+            :invalid-message="$t(error.database)"
+            :disabled="loading.addAccount"
+            class="mg-bottom"
+            ref="database"
+          />
+        </cv-form>
+        <NsInlineNotification
+          v-if="error.addAccount"
+          kind="error"
+          :title="$t('action.add-account')"
+          :description="error.addAccount"
+          :showCloseButton="false"
+        />
+      </template>
+      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
+      <template slot="primary-button">{{ $t("settings.create") }}</template>
+    </NsModal>
+    <!-- remove account -->
+    <NsModal
+      kind="danger"
+      size="default"
+      :visible="isRemoveModalShown"
+      :isLoading="loading.removeAccount"
+      :primary-button-disabled="loading.removeAccount"
+      :autoHideOff="loading.removeAccount"
+      @modal-hidden="isRemoveModalShown = false"
+      @secondary-click="isRemoveModalShown = false"
+      @primary-click="removeAccount"
+    >
+      <template slot="title">{{
+        $t("settings.remove_account_title", {
+          username: accountToRemove.username,
+        })
+      }}</template>
+      <template slot="content">
+        <p class="mg-bottom">
+          {{ $t("settings.remove_account_description") }}
+        </p>
+        <cv-checkbox
+          id="remove-account-database"
+          value="deleteDatabase"
+          v-model="deleteDatabase"
+          :label="
+            $t('settings.remove_account_database', {
+              database: accountToRemove.database,
+            })
+          "
+          :disabled="loading.removeAccount"
+        />
+        <NsInlineNotification
+          v-if="deleteDatabase"
+          kind="warning"
+          :title="$t('settings.remove_account_database_warning')"
+          :showCloseButton="false"
+        />
+      </template>
+      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
+      <template slot="primary-button">{{
+        $t("settings.remove_account")
+      }}</template>
+    </NsModal>
   </cv-grid>
 </template>
 
@@ -173,23 +283,34 @@ export default {
       host: "",
       isLetsEncryptEnabled: false,
       isHttpToHttpsEnabled: true,
-      database: "",
-      connection: {
-        url: "",
+      url: "",
+      accounts: [],
+      isAddModalShown: false,
+      newAccount: {
         username: "",
-        password: "",
         database: "",
       },
+      isRemoveModalShown: false,
+      accountToRemove: {
+        username: "",
+        database: "",
+      },
+      deleteDatabase: false,
       loading: {
         getConfiguration: false,
         configureModule: false,
+        addAccount: false,
+        removeAccount: false,
       },
       error: {
         getConfiguration: "",
         configureModule: "",
+        addAccount: "",
+        removeAccount: "",
         host: "",
         lets_encrypt: "",
         http2https: "",
+        username: "",
         database: "",
       },
     };
@@ -211,41 +332,45 @@ export default {
     next();
   },
   methods: {
-    async getConfiguration() {
-      this.loading.getConfiguration = true;
-      this.error.getConfiguration = "";
-      const taskAction = "get-configuration";
+    // Start a module task and route its events to the given handlers
+    async runTask(action, data, handlers, extra) {
       const eventId = this.getUuid();
-
-      // register to task error
+      this.core.$root.$once(`${action}-aborted-${eventId}`, handlers.aborted);
       this.core.$root.$once(
-        `${taskAction}-aborted-${eventId}`,
-        this.getConfigurationAborted
+        `${action}-completed-${eventId}`,
+        handlers.completed
       );
-
-      // register to task completion
-      this.core.$root.$once(
-        `${taskAction}-completed-${eventId}`,
-        this.getConfigurationCompleted
-      );
-
+      if (handlers.validationFailed) {
+        this.core.$root.$once(
+          `${action}-validation-failed-${eventId}`,
+          handlers.validationFailed
+        );
+      }
       const res = await to(
         this.createModuleTaskForApp(this.instanceName, {
-          action: taskAction,
+          action,
+          data,
           extra: {
-            title: this.$t("action." + taskAction),
+            title: this.$t("action." + action),
             isNotificationHidden: true,
+            ...extra,
             eventId,
           },
         })
       );
-      const err = res[0];
-
+      return res[0];
+    },
+    async getConfiguration() {
+      this.loading.getConfiguration = true;
+      this.error.getConfiguration = "";
+      const err = await this.runTask("get-configuration", undefined, {
+        aborted: this.getConfigurationAborted,
+        completed: this.getConfigurationCompleted,
+      });
       if (err) {
-        console.error(`error creating task ${taskAction}`, err);
+        console.error("error creating task get-configuration", err);
         this.error.getConfiguration = this.getErrorMessage(err);
         this.loading.getConfiguration = false;
-        return;
       }
     },
     getConfigurationAborted(taskResult, taskContext) {
@@ -258,13 +383,8 @@ export default {
       this.host = config.host;
       this.isLetsEncryptEnabled = config.lets_encrypt;
       this.isHttpToHttpsEnabled = config.http2https;
-      this.database = config.database;
-      this.connection = {
-        url: config.url,
-        username: config.username,
-        password: config.password,
-        database: config.database,
-      };
+      this.url = config.url;
+      this.accounts = config.accounts;
 
       this.loading.getConfiguration = false;
       this.focusElement("host");
@@ -281,23 +401,13 @@ export default {
         }
         isValidationOk = false;
       }
-      if (!/^[a-z][a-z0-9_$()+-]*$/.test(this.database)) {
-        this.error.database = "settings.database_pattern";
-
-        if (isValidationOk) {
-          this.focusElement("database");
-        }
-        isValidationOk = false;
-      }
       return isValidationOk;
     },
-    configureModuleValidationFailed(validationErrors) {
-      this.loading.configureModule = false;
+    // Show task validation errors next to their fields
+    showValidationErrors(validationErrors) {
       let focusAlreadySet = false;
-
       for (const validationError of validationErrors) {
         const param = validationError.parameter;
-        // set i18n error message
         this.error[param] = "settings." + validationError.error;
 
         if (!focusAlreadySet) {
@@ -307,58 +417,39 @@ export default {
       }
     },
     async configureModule() {
-      const isValidationOk = this.validateConfigureModule();
-      if (!isValidationOk) {
+      if (!this.validateConfigureModule()) {
         return;
       }
-
       this.loading.configureModule = true;
-      const taskAction = "configure-module";
-      const eventId = this.getUuid();
-
-      // register to task error
-      this.core.$root.$once(
-        `${taskAction}-aborted-${eventId}`,
-        this.configureModuleAborted
+      const err = await this.runTask(
+        "configure-module",
+        {
+          host: this.host,
+          lets_encrypt: this.isLetsEncryptEnabled,
+          http2https: this.isHttpToHttpsEnabled,
+        },
+        {
+          aborted: this.configureModuleAborted,
+          completed: this.configureModuleCompleted,
+          validationFailed: this.configureModuleValidationFailed,
+        },
+        {
+          title: this.$t("settings.instance_configuration", {
+            instance: this.instanceName,
+          }),
+          description: this.$t("settings.configuring"),
+          isNotificationHidden: false,
+        }
       );
-
-      // register to task validation
-      this.core.$root.$once(
-        `${taskAction}-validation-failed-${eventId}`,
-        this.configureModuleValidationFailed
-      );
-
-      // register to task completion
-      this.core.$root.$once(
-        `${taskAction}-completed-${eventId}`,
-        this.configureModuleCompleted
-      );
-      const res = await to(
-        this.createModuleTaskForApp(this.instanceName, {
-          action: taskAction,
-          data: {
-            host: this.host,
-            lets_encrypt: this.isLetsEncryptEnabled,
-            http2https: this.isHttpToHttpsEnabled,
-            database: this.database,
-          },
-          extra: {
-            title: this.$t("settings.instance_configuration", {
-              instance: this.instanceName,
-            }),
-            description: this.$t("settings.configuring"),
-            eventId,
-          },
-        })
-      );
-      const err = res[0];
-
       if (err) {
-        console.error(`error creating task ${taskAction}`, err);
+        console.error("error creating task configure-module", err);
         this.error.configureModule = this.getErrorMessage(err);
         this.loading.configureModule = false;
-        return;
       }
+    },
+    configureModuleValidationFailed(validationErrors) {
+      this.loading.configureModule = false;
+      this.showValidationErrors(validationErrors);
     },
     configureModuleAborted(taskResult, taskContext) {
       console.error(`${taskContext.action} aborted`, taskResult);
@@ -367,8 +458,108 @@ export default {
     },
     configureModuleCompleted() {
       this.loading.configureModule = false;
-
-      // reload configuration
+      this.getConfiguration();
+    },
+    showAddModal() {
+      this.newAccount = { username: "", database: "" };
+      this.error.addAccount = "";
+      this.error.username = "";
+      this.error.database = "";
+      this.isAddModalShown = true;
+      this.$nextTick(() => this.focusElement("username"));
+    },
+    validateAddAccount() {
+      this.error.username = "";
+      this.error.database = "";
+      let isValidationOk = true;
+      if (!/^[a-z][a-z0-9._-]{0,63}$/.test(this.newAccount.username)) {
+        this.error.username = "settings.username_invalid";
+        this.focusElement("username");
+        isValidationOk = false;
+      }
+      if (!/^[a-z][a-z0-9_$()+-]*$/.test(this.newAccount.database)) {
+        this.error.database = "settings.database_pattern";
+        if (isValidationOk) {
+          this.focusElement("database");
+        }
+        isValidationOk = false;
+      }
+      return isValidationOk;
+    },
+    async addAccount() {
+      if (!this.validateAddAccount()) {
+        return;
+      }
+      this.loading.addAccount = true;
+      this.error.addAccount = "";
+      const err = await this.runTask(
+        "add-account",
+        {
+          username: this.newAccount.username,
+          database: this.newAccount.database,
+        },
+        {
+          aborted: this.addAccountAborted,
+          completed: this.addAccountCompleted,
+          validationFailed: this.addAccountValidationFailed,
+        }
+      );
+      if (err) {
+        console.error("error creating task add-account", err);
+        this.error.addAccount = this.getErrorMessage(err);
+        this.loading.addAccount = false;
+      }
+    },
+    addAccountValidationFailed(validationErrors) {
+      this.loading.addAccount = false;
+      this.showValidationErrors(validationErrors);
+    },
+    addAccountAborted(taskResult, taskContext) {
+      console.error(`${taskContext.action} aborted`, taskResult);
+      this.error.addAccount = this.$t("error.generic_error");
+      this.loading.addAccount = false;
+    },
+    addAccountCompleted() {
+      this.loading.addAccount = false;
+      this.isAddModalShown = false;
+      this.getConfiguration();
+    },
+    showRemoveModal(account) {
+      this.accountToRemove = account;
+      this.deleteDatabase = false;
+      this.error.removeAccount = "";
+      this.isRemoveModalShown = true;
+    },
+    async removeAccount() {
+      this.loading.removeAccount = true;
+      this.error.removeAccount = "";
+      const err = await this.runTask(
+        "remove-account",
+        {
+          username: this.accountToRemove.username,
+          delete_database: this.deleteDatabase,
+        },
+        {
+          aborted: this.removeAccountAborted,
+          completed: this.removeAccountCompleted,
+        }
+      );
+      if (err) {
+        console.error("error creating task remove-account", err);
+        this.error.removeAccount = this.getErrorMessage(err);
+        this.loading.removeAccount = false;
+        this.isRemoveModalShown = false;
+      }
+    },
+    removeAccountAborted(taskResult, taskContext) {
+      console.error(`${taskContext.action} aborted`, taskResult);
+      this.error.removeAccount = this.$t("error.generic_error");
+      this.loading.removeAccount = false;
+      this.isRemoveModalShown = false;
+    },
+    removeAccountCompleted() {
+      this.loading.removeAccount = false;
+      this.isRemoveModalShown = false;
       this.getConfiguration();
     },
   },
@@ -379,5 +570,14 @@ export default {
 @import "../styles/carbon-utils";
 .mg-bottom {
   margin-bottom: $spacing-06;
+}
+
+.account {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: $spacing-05;
+  align-items: end;
+  padding-bottom: $spacing-05;
+  border-bottom: 1px solid $ui-03;
 }
 </style>

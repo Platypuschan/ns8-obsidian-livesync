@@ -5,12 +5,15 @@
 """Credentials and CouchDB provisioning for the Obsidian LiveSync module.
 
 The server settings themselves are static (etc/livesync.ini). This module
-creates the credentials once and prepares the LiveSync database and account,
-like utils/couchdb/provision.ts of vrtmrz/obsidian-livesync, but with a
-separate account that is not a CouchDB server administrator.
+creates the administrator credentials once and manages the sync accounts:
+each account is a CouchDB user that administers exactly one database of its
+own, like utils/couchdb/provision.ts of vrtmrz/obsidian-livesync prepares a
+database, but without any server-wide rights.
 """
 
 import base64
+import contextlib
+import fcntl
 import json
 import os
 import re
@@ -23,13 +26,19 @@ import urllib.request
 # Both files live in the module state directory, the working directory of
 # actions and of couchdb.service.
 ADMIN_ENV = "couchdb.env"
-SYNC_ENV = "sync.env"
+ACCOUNTS = "accounts.json"
+# Release 0.1.0 kept its single account here; it is migrated to ACCOUNTS.
+LEGACY_SYNC_ENV = "sync.env"
 ADMIN_USER = "admin"
-SYNC_USER = "livesync"
+DEFAULT_USER = "livesync"
 DEFAULT_DATABASE = "obsidiannotes"
 # CouchDB database name rules as enforced by the plugin's provisioning tool.
 DATABASE_PATTERN = re.compile(r"^[a-z][a-z0-9_$()+-]*$")
 DATABASE_MAX_LENGTH = 238
+# CouchDB user names must not contain ":" nor start with "_"; keep them simple
+# so they can be typed on a phone.
+USERNAME_PATTERN = re.compile(r"^[a-z][a-z0-9._-]{0,63}$")
+RESERVED_USERNAMES = {ADMIN_USER}
 
 
 class ProvisioningError(Exception):
@@ -41,6 +50,14 @@ def valid_database(name):
         isinstance(name, str)
         and len(name) <= DATABASE_MAX_LENGTH
         and DATABASE_PATTERN.fullmatch(name) is not None
+    )
+
+
+def valid_username(name):
+    return (
+        isinstance(name, str)
+        and USERNAME_PATTERN.fullmatch(name) is not None
+        and name not in RESERVED_USERNAMES
     )
 
 
@@ -76,36 +93,107 @@ def new_password():
     return secrets.token_urlsafe(24)
 
 
-def ensure_credentials(state_dir="."):
-    """Create missing credentials; keep existing ones (also after a restore).
+def ensure_admin_credentials(state_dir="."):
+    """Create the administrator once; keep it (also after a restore).
 
-    Returns (admin, sync), each a (user, password) tuple.
+    Returns (user, password).
     """
-    admin_path = os.path.join(state_dir, ADMIN_ENV)
-    admin = read_env(admin_path)
+    path = os.path.join(state_dir, ADMIN_ENV)
+    admin = read_env(path)
     if not admin.get("COUCHDB_USER") or not admin.get("COUCHDB_PASSWORD"):
         admin = {"COUCHDB_USER": ADMIN_USER, "COUCHDB_PASSWORD": new_password()}
-        write_env(admin_path, admin)
+        write_env(path, admin)
     else:
-        os.chmod(admin_path, 0o600)
+        os.chmod(path, 0o600)
+    return admin["COUCHDB_USER"], admin["COUCHDB_PASSWORD"]
 
-    sync_path = os.path.join(state_dir, SYNC_ENV)
-    sync = read_env(sync_path)
-    if not sync.get("LIVESYNC_USER") or not sync.get("LIVESYNC_PASSWORD"):
-        sync = {"LIVESYNC_USER": SYNC_USER, "LIVESYNC_PASSWORD": new_password()}
-        write_env(sync_path, sync)
+
+@contextlib.contextmanager
+def accounts_lock(state_dir="."):
+    """Serialize changes of the account list between concurrent tasks."""
+    path = os.path.join(state_dir, ACCOUNTS + ".lock")
+    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(descriptor)
+
+
+def read_accounts(state_dir="."):
+    """Return the account list, or None if it was never created."""
+    try:
+        with open(os.path.join(state_dir, ACCOUNTS), "r", encoding="utf-8") as stream:
+            return json.load(stream)
+    except FileNotFoundError:
+        return None
+
+
+def write_accounts(accounts, state_dir="."):
+    path = os.path.join(state_dir, ACCOUNTS)
+    temporary = path + ".tmp"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(accounts, stream, indent=2)
+        stream.write("\n")
+    os.chmod(temporary, 0o600)
+    os.replace(temporary, path)
+
+
+def migrate_legacy_account(database, state_dir="."):
+    """Move the 0.1.0 account from sync.env into accounts.json.
+
+    Returns True if something was migrated.
+    """
+    legacy_path = os.path.join(state_dir, LEGACY_SYNC_ENV)
+    legacy = read_env(legacy_path)
+    if not os.path.exists(legacy_path):
+        return False
+    if read_accounts(state_dir) is None and legacy.get("LIVESYNC_USER") and legacy.get("LIVESYNC_PASSWORD"):
+        write_accounts(
+            [{
+                "username": legacy["LIVESYNC_USER"],
+                "password": legacy["LIVESYNC_PASSWORD"],
+                "database": database or DEFAULT_DATABASE,
+            }],
+            state_dir,
+        )
+    os.remove(legacy_path)
+    return True
+
+
+def ensure_accounts(database=None, state_dir="."):
+    """Return the account list; create the default account on first use.
+
+    Once accounts.json exists it is never refilled, so deleting every
+    account is respected.
+    """
+    migrate_legacy_account(database, state_dir)
+    accounts = read_accounts(state_dir)
+    if accounts is None:
+        accounts = [{
+            "username": DEFAULT_USER,
+            "password": new_password(),
+            "database": database or DEFAULT_DATABASE,
+        }]
+        write_accounts(accounts, state_dir)
     else:
-        os.chmod(sync_path, 0o600)
-
-    return (
-        (admin["COUCHDB_USER"], admin["COUCHDB_PASSWORD"]),
-        (sync["LIVESYNC_USER"], sync["LIVESYNC_PASSWORD"]),
-    )
+        os.chmod(os.path.join(state_dir, ACCOUNTS), 0o600)
+    return accounts
 
 
-def read_sync_credentials(state_dir="."):
-    sync = read_env(os.path.join(state_dir, SYNC_ENV))
-    return sync.get("LIVESYNC_USER", ""), sync.get("LIVESYNC_PASSWORD", "")
+def account_errors(accounts, username, database):
+    """Validation errors for a new account, in the NS8 validation format."""
+    errors = []
+    if not valid_username(username):
+        errors.append({"field": "username", "parameter": "username", "value": username, "error": "username_invalid"})
+    elif any(account["username"] == username for account in accounts):
+        errors.append({"field": "username", "parameter": "username", "value": username, "error": "username_exists"})
+    if not valid_database(database):
+        errors.append({"field": "database", "parameter": "database", "value": database, "error": "database_pattern"})
+    elif any(account["database"] == database for account in accounts):
+        errors.append({"field": "database", "parameter": "database", "value": database, "error": "database_in_use"})
+    return errors
 
 
 class CouchDB:
@@ -207,8 +295,61 @@ def ensure_database_access(client, database, user):
         raise ProvisioningError(f"Saving the security of {database} failed with HTTP {status}: {body}")
 
 
-def provision(client, database, user, password):
+def provision_account(client, account):
+    ensure_user(client, account["username"], account["password"])
+    ensure_database(client, account["database"])
+    ensure_database_access(client, account["database"], account["username"])
+
+
+def provision(client, accounts):
     wait_until_up(client)
-    ensure_user(client, user, password)
-    ensure_database(client, database)
-    ensure_database_access(client, database, user)
+    for account in accounts:
+        provision_account(client, account)
+
+
+def remove_user(client, user):
+    path = "/_users/" + quote("org.couchdb.user:" + user)
+    status, existing = client.request("GET", path)
+    if status == 404:
+        return
+    if status != 200:
+        raise ProvisioningError(f"Reading the {user} account failed with HTTP {status}: {existing}")
+    status, body = client.request("DELETE", path + "?rev=" + quote(existing["_rev"]))
+    if status not in (200, 202, 404):
+        raise ProvisioningError(f"Deleting the {user} account failed with HTTP {status}: {body}")
+
+
+def revoke_database_access(client, database, user):
+    path = "/" + quote(database) + "/_security"
+    status, security = client.request("GET", path)
+    if status == 404:
+        return
+    if status != 200:
+        raise ProvisioningError(f"Reading the security of {database} failed with HTTP {status}: {security}")
+    security = security or {}
+    changed = False
+    for section in ("admins", "members"):
+        names = security.get(section, {}).get("names", [])
+        if user in names:
+            names.remove(user)
+            changed = True
+    if not changed:
+        return
+    status, body = client.request("PUT", path, security)
+    if status != 200:
+        raise ProvisioningError(f"Saving the security of {database} failed with HTTP {status}: {body}")
+
+
+def delete_database(client, database):
+    status, body = client.request("DELETE", "/" + quote(database))
+    if status not in (200, 202, 404):
+        raise ProvisioningError(f"Deleting database {database} failed with HTTP {status}: {body}")
+
+
+def remove_account(client, account, delete_data):
+    """Delete the CouchDB user; drop or keep (without access) its database."""
+    remove_user(client, account["username"])
+    if delete_data:
+        delete_database(client, account["database"])
+    else:
+        revoke_database_access(client, account["database"], account["username"])

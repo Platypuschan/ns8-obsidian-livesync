@@ -12,7 +12,6 @@
         "validation_error": "Fehlerhafte Prüfung"
     },
     "settings": {
-        "test_field": "Testfeld",
         "lets_encrypt": "Let's-Encrypt-Zertifikat anfordern",
         "http_to_https": "HTTPS erzwingen",
         "enabled": "Aktiviert",
@@ -26,19 +25,31 @@
         "save": "Speichern",
         "title": "Einstellungen",
         "livesync_fqdn": "Hostname des LiveSync-Servers (FQDN)",
-        "database": "Datenbankname",
-        "database_helper": "CouchDB-Datenbank für den Vault. Ein neuer Name legt eine neue, leere Datenbank an; vorhandene Datenbanken werden nie gelöscht.",
+        "database_helper": "Jedes Konto braucht eine eigene Datenbank. Ein neuer Name legt eine leere Datenbank an; eine vorhandene Datenbank ohne Konto wird übernommen.",
         "database_pattern": "Muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern und _ $ ( ) + - enthalten",
         "database_maxLength": "Darf höchstens 238 Zeichen lang sein",
-        "connection_title": "Verbindung für Self-hosted LiveSync",
-        "connection_description": "Diese Werte im Obsidian-Plugin Self-hosted LiveSync eintragen (Remote-Typ CouchDB).",
         "https_warning_title": "HTTPS-Zertifikat",
         "https_warning_description": "Obsidian unter iOS und Android verbindet sich nur mit Servern mit gültigem Zertifikat. Ein Let's-Encrypt-Zertifikat anfordern oder ein anderes vertrauenswürdiges Zertifikat für diesen Host verwenden.",
         "server_uri": "Server-URI",
         "username": "Benutzername",
         "password": "Passwort",
         "database_name": "Datenbankname",
-        "passphrase_hint": "Im Plugin zusätzlich die Ende-zu-Ende-Verschlüsselung aktivieren und die Passphrase sicher aufbewahren: Sie wird nicht auf diesem Server gespeichert und kann nicht wiederhergestellt werden."
+        "passphrase_hint": "Im Plugin zusätzlich die Ende-zu-Ende-Verschlüsselung aktivieren und die Passphrase sicher aufbewahren: Sie wird nicht auf diesem Server gespeichert und kann nicht wiederhergestellt werden.",
+        "database_in_use": "Diese Datenbank gehört bereits zu einem anderen Konto",
+        "accounts_title": "Sync-Konten für Self-hosted LiveSync",
+        "accounts_description": "Die Server-URI und die Werte eines Kontos im Obsidian-Plugin Self-hosted LiveSync eintragen (Remote-Typ CouchDB). Jedes Konto hat nur Zugriff auf seine eigene Datenbank; pro Vault eine Datenbank verwenden.",
+        "no_accounts": "Keine Sync-Konten",
+        "add_account": "Konto hinzufügen",
+        "remove_account": "Löschen",
+        "remove_account_title": "Konto {username} löschen",
+        "remove_account_description": "Obsidian-Clients mit diesem Konto können danach nicht mehr synchronisieren. Ohne die Option unten bleibt die Datenbank erhalten; dann hat nur noch der CouchDB-Administrator Zugriff.",
+        "remove_account_database": "Auch die Datenbank {database} löschen",
+        "remove_account_database_warning": "Alle Notizen dieser Datenbank werden auf dem Server gelöscht. Das lässt sich nicht rückgängig machen.",
+        "username_helper": "Kleinbuchstaben, Ziffern, Punkt, Unterstrich und Bindestrich; beginnt mit einem Buchstaben. Das Passwort wird erzeugt.",
+        "username_invalid": "Muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern, . _ und - enthalten (höchstens 64 Zeichen); „admin“ ist reserviert",
+        "username_exists": "Ein Konto mit diesem Namen gibt es schon",
+        "create": "Anlegen",
+        "cancel": "Abbrechen"
     },
     "common": {
         "required": "erforderlich",
@@ -72,7 +83,9 @@
         "get-status": "Status abfragen",
         "configure-module": "Modul konfigurieren",
         "get-configuration": "Konfiguration abrufen",
-        "get-name": "Name abrufen"
+        "get-name": "Name abrufen",
+        "add-account": "Sync-Konto hinzufügen",
+        "remove-account": "Sync-Konto löschen"
     },
     "task": {
         "cannot_create_task": "{task} kann nicht erstellt werden"

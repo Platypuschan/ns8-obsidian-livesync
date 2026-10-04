@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Delete a sync account. Its database is deleted only on request; otherwise
+# it stays, readable by the CouchDB administrator only.
+
+import json
+import os
+import sys
+
+import agent
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_setup
+
+request = json.load(sys.stdin)
+username = request["username"]
+delete_database = request.get("delete_database", False)
+
+client = livesync_setup.CouchDB(
+    "http://127.0.0.1:" + os.environ["TCP_PORT"], *livesync_setup.ensure_admin_credentials()
+)
+with livesync_setup.accounts_lock():
+    accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
+    account = next((item for item in accounts if item["username"] == username), None)
+    if account is None:
+        agent.set_status("validation-failed")
+        json.dump([{"field": "username", "parameter": "username", "value": username, "error": "username_not_found"}], fp=sys.stdout)
+        sys.exit(2)
+    try:
+        livesync_setup.wait_until_up(client)
+        livesync_setup.remove_account(client, account, delete_database)
+    except livesync_setup.ProvisioningError as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)
+    livesync_setup.write_accounts([item for item in accounts if item["username"] != username])

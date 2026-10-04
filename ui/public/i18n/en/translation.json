@@ -34,19 +34,31 @@
     "host_pattern": "Must be a valid fully qualified domain name",
     "host_format": "Must be a valid fully qualified domain name",
     "livesync_fqdn": "LiveSync server hostname (FQDN)",
-    "database": "Database name",
-    "database_helper": "CouchDB database for the vault. A new name creates a new, empty database; existing databases are never deleted.",
+    "database_helper": "Each account needs a database of its own. A new name creates an empty database; an existing database without account is taken over.",
     "database_pattern": "Must start with a lowercase letter and contain only lowercase letters, digits and _ $ ( ) + -",
     "database_maxLength": "Must be at most 238 characters long",
-    "connection_title": "Connection for Self-hosted LiveSync",
-    "connection_description": "Enter these values in the Self-hosted LiveSync plugin of Obsidian (remote type CouchDB).",
     "https_warning_title": "HTTPS certificate",
     "https_warning_description": "Obsidian on iOS and Android only connects to servers with a valid certificate. Request a Let's Encrypt certificate or use another trusted certificate for this host.",
     "server_uri": "Server URI",
     "username": "Username",
     "password": "Password",
     "database_name": "Database name",
-    "passphrase_hint": "Also enable end-to-end encryption in the plugin and keep its passphrase safe: it is not stored on this server and cannot be recovered."
+    "passphrase_hint": "Also enable end-to-end encryption in the plugin and keep its passphrase safe: it is not stored on this server and cannot be recovered.",
+    "database_in_use": "This database already belongs to another account",
+    "accounts_title": "Sync accounts for Self-hosted LiveSync",
+    "accounts_description": "Enter the server URI and the values of one account in the Self-hosted LiveSync plugin of Obsidian (remote type CouchDB). Each account can only access its own database; use one database per vault.",
+    "no_accounts": "No sync accounts",
+    "add_account": "Add account",
+    "remove_account": "Delete",
+    "remove_account_title": "Delete account {username}",
+    "remove_account_description": "Obsidian clients that use this account can no longer sync. Without the option below, the database is kept and only the CouchDB administrator can access it.",
+    "remove_account_database": "Also delete the database {database}",
+    "remove_account_database_warning": "All notes in this database are deleted on the server. This cannot be undone.",
+    "username_helper": "Lowercase letters, digits, dot, underscore and hyphen; starts with a letter. The password is generated.",
+    "username_invalid": "Must start with a lowercase letter and contain only lowercase letters, digits, . _ and - (at most 64 characters); \"admin\" is reserved",
+    "username_exists": "An account with this name already exists",
+    "create": "Create",
+    "cancel": "Cancel"
   },
   "about": {
     "title": "About"
@@ -62,7 +74,9 @@
     "get-name": "Get name",
     "list-backup-repositories": "List backup repositories",
     "list-backups": "List backups",
-    "list-installed-modules": "List installed modules"
+    "list-installed-modules": "List installed modules",
+    "add-account": "Add sync account",
+    "remove-account": "Delete sync account"
   },
   "error": {
     "error": "Error",

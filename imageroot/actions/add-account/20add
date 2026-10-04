@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Create a sync account with a database of its own and a generated password.
+
+import json
+import os
+import sys
+
+import agent
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_setup
+
+request = json.load(sys.stdin)
+username = request["username"]
+database = request["database"]
+
+client = livesync_setup.CouchDB(
+    "http://127.0.0.1:" + os.environ["TCP_PORT"], *livesync_setup.ensure_admin_credentials()
+)
+with livesync_setup.accounts_lock():
+    accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
+    errors = livesync_setup.account_errors(accounts, username, database)
+    if errors:
+        agent.set_status("validation-failed")
+        json.dump(errors, fp=sys.stdout)
+        sys.exit(2)
+
+    account = {"username": username, "password": livesync_setup.new_password(), "database": database}
+    try:
+        livesync_setup.wait_until_up(client)
+        livesync_setup.provision_account(client, account)
+    except livesync_setup.ProvisioningError as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)
+    livesync_setup.write_accounts(accounts + [account])
+
+json.dump(account, fp=sys.stdout)

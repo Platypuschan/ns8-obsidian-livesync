@@ -12,16 +12,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..
 import livesync_setup
 
 host = os.getenv("TRAEFIK_HOST", "")
-username, password = livesync_setup.read_sync_credentials()
+accounts = livesync_setup.read_accounts()
+if accounts is None:
+    # Before the first configuration, or still in the 0.1.0 format
+    legacy = livesync_setup.read_env(livesync_setup.LEGACY_SYNC_ENV)
+    accounts = [{
+        "username": legacy["LIVESYNC_USER"],
+        "password": legacy["LIVESYNC_PASSWORD"],
+        "database": os.getenv("LIVESYNC_DATABASE", livesync_setup.DEFAULT_DATABASE),
+    }] if legacy.get("LIVESYNC_USER") else []
+
 config = {
     "host": host,
     "http2https": os.getenv("TRAEFIK_HTTP2HTTPS") == "True",
     "lets_encrypt": os.getenv("TRAEFIK_LETS_ENCRYPT") == "True",
-    "database": os.getenv("LIVESYNC_DATABASE", livesync_setup.DEFAULT_DATABASE),
     # Obsidian on mobile devices only connects over HTTPS.
     "url": f"https://{host}" if host else "",
-    "username": username,
-    "password": password,
+    "accounts": accounts,
 }
 
 json.dump(config, fp=sys.stdout)
