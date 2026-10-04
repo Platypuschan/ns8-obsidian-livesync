@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "New sync account",
+    "$id": "http://nethserver.org/json-schema/task/output/obsidian-livesync/add-account",
+    "type": "object",
+    "required": [
+        "username",
+        "password",
+        "database"
+    ],
+    "properties": {
+        "username": {
+            "type": "string"
+        },
+        "password": {
+            "type": "string"
+        },
+        "database": {
+            "type": "string"
+        }
+    }
+}

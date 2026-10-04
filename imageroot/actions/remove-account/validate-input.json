@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Remove sync account",
+    "$id": "http://nethserver.org/json-schema/task/input/obsidian-livesync/remove-account",
+    "description": "Delete a sync account; delete its database only on request",
+    "examples": [
+        {
+            "username": "alice",
+            "delete_database": false
+        }
+    ],
+    "type": "object",
+    "required": [
+        "username"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "username": {
+            "type": "string",
+            "title": "User name"
+        },
+        "delete_database": {
+            "type": "boolean",
+            "title": "Delete the database",
+            "description": "Also delete the account's database and all its data"
+        }
+    }
+}

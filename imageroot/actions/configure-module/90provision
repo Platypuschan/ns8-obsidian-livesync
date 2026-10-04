@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-# Create the LiveSync account and database and grant the account access.
+# Make sure every sync account and its database exist in CouchDB, e.g. after
+# a restore or when an earlier provisioning failed.
 
 import os
 import sys
@@ -12,12 +13,13 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
 import livesync_setup
 
-(admin_user, admin_password), (sync_user, sync_password) = livesync_setup.ensure_credentials()
 client = livesync_setup.CouchDB(
-    "http://127.0.0.1:" + os.environ["TCP_PORT"], admin_user, admin_password
+    "http://127.0.0.1:" + os.environ["TCP_PORT"], *livesync_setup.ensure_admin_credentials()
 )
-try:
-    livesync_setup.provision(client, os.environ["LIVESYNC_DATABASE"], sync_user, sync_password)
-except livesync_setup.ProvisioningError as error:
-    print(error, file=sys.stderr)
-    sys.exit(1)
+with livesync_setup.accounts_lock():
+    accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
+    try:
+        livesync_setup.provision(client, accounts)
+    except livesync_setup.ProvisioningError as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)

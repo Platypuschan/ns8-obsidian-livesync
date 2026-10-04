@@ -15,9 +15,14 @@ import livesync_setup
 
 data = json.load(sys.stdin)
 
+# "database" only names the database of the default account that is created
+# on the first configuration; afterwards accounts are managed with
+# add-account and remove-account.
 database = data.get("database") or os.environ.get("LIVESYNC_DATABASE") or livesync_setup.DEFAULT_DATABASE
 agent.set_env("LIVESYNC_DATABASE", database)
 
 # The CouchDB administrator is created from couchdb.env on the first start;
 # the password is generated once and kept, also across restores.
-livesync_setup.ensure_credentials()
+livesync_setup.ensure_admin_credentials()
+with livesync_setup.accounts_lock():
+    livesync_setup.ensure_accounts(database)

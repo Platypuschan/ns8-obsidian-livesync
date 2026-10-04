@@ -37,7 +37,7 @@
         "database": {
             "type": "string",
             "title": "Database name",
-            "description": "CouchDB database of the vault; created if missing. Existing databases are never deleted.",
+            "description": "Database of the default account created on the first configuration; ignored afterwards (use add-account).",
             "pattern": "^[a-z][a-z0-9_$()+-]*$",
             "maxLength": 238
         }

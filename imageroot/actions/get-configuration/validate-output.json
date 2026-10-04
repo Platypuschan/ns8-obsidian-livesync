@@ -8,10 +8,14 @@
             "host": "livesync.domain.org",
             "http2https": true,
             "lets_encrypt": true,
-            "database": "obsidiannotes",
             "url": "https://livesync.domain.org",
-            "username": "livesync",
-            "password": "secret"
+            "accounts": [
+                {
+                    "username": "livesync",
+                    "password": "secret",
+                    "database": "obsidiannotes"
+                }
+            ]
         }
     ],
     "type": "object",
@@ -19,10 +23,8 @@
         "host",
         "http2https",
         "lets_encrypt",
-        "database",
         "url",
-        "username",
-        "password"
+        "accounts"
     ],
     "properties": {
         "host": {
@@ -35,21 +37,32 @@
         "http2https": {
             "type": "boolean"
         },
-        "database": {
-            "type": "string",
-            "description": "CouchDB database of the vault"
-        },
         "url": {
             "type": "string",
             "description": "Server URI to enter in the plugin; empty before the first configuration"
         },
-        "username": {
-            "type": "string",
-            "description": "LiveSync account name"
-        },
-        "password": {
-            "type": "string",
-            "description": "LiveSync account password"
+        "accounts": {
+            "type": "array",
+            "description": "Sync accounts, each with a database of its own",
+            "items": {
+                "type": "object",
+                "required": [
+                    "username",
+                    "password",
+                    "database"
+                ],
+                "properties": {
+                    "username": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "database": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }

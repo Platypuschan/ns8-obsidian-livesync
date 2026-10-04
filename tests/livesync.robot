@@ -13,6 +13,7 @@ ${DATABASE}          obsidiannotes
 ${module_id}         ${EMPTY}
 ${web_port}          ${EMPTY}
 ${sync_auth}         ${EMPTY}
+${alice_auth}        ${EMPTY}
 ${ADMIN_USER}        admin
 ${ADMIN_PASSWORD}    Nethesis,1234
 
@@ -36,11 +37,22 @@ Read sync credentials
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}    0    get-configuration failed: ${output}
     &{config} =    Evaluate    json.loads(r'''${output}''')    modules=json
-    Should Be Equal    ${config.username}    livesync
-    Should Not Be Empty    ${config.password}
     Should Be Equal    ${config.url}    https://${HOST}
-    Should Be Equal    ${config.database}    ${DATABASE}
-    Set Suite Variable    ${sync_auth}    ${config.username}:${config.password}
+    # 0.1.0 returned one account at the top level, later releases a list
+    IF    'accounts' in $config
+        ${account} =    Evaluate    next(filter(lambda item: item['username'] == 'livesync', $config['accounts']))
+    ELSE
+        ${account} =    Evaluate    {k: $config[k] for k in ('username', 'password', 'database')}
+    END
+    Should Be Equal    ${account}[database]    ${DATABASE}
+    Should Not Be Empty    ${account}[password]
+    Set Suite Variable    ${sync_auth}    ${account}[username]:${account}[password]
+
+Run action
+    [Arguments]    ${action}    ${payload}
+    ${output}    ${rc} =    Execute Command    api-cli run module/${module_id}/${action} --data '${payload}'
+    ...    return_rc=True
+    RETURN    ${output}    ${rc}
 
 CouchDB is up
     ${output}    ${rc} =    Execute Command    curl -fsS --max-time 5 -u '${sync_auth}' http://127.0.0.1:${web_port}/${DATABASE}
@@ -110,6 +122,10 @@ Check service after install or update
 
 Check data and credentials kept by the update
     Skip If    r'${SCENARIO}' != 'update'    only the update scenario has data from the previous release
+    # The 0.1.0 account moved from sync.env to accounts.json
+    ${rc} =    Execute Command    runagent -m ${module_id} sh -c 'test -f accounts.json && test ! -e sync.env'
+    ...    return_rc=True    return_stdout=False
+    Should Be Equal As Integers    ${rc}    0    sync.env was not migrated to accounts.json
     ${output}    ${rc} =    Execute Command    curl -fsS --max-time 10 -u '${sync_auth}' http://127.0.0.1:${web_port}/${DATABASE}/ci-before-update
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}    0    note lost by the update: ${output}
@@ -123,7 +139,7 @@ Reconfigure keeps credentials and data
     Wait until CouchDB is up
 
 Check private credential files
-    ${modes} =    Execute Command    runagent -m ${module_id} stat -c '%a' couchdb.env sync.env
+    ${modes} =    Execute Command    runagent -m ${module_id} stat -c '%a' couchdb.env accounts.json
     Should Be Equal    ${modes}    600\n600
     ${environment} =    Execute Command    runagent -m ${module_id} cat environment
     Should Not Contain    ${environment}    PASSWORD
@@ -170,9 +186,59 @@ LiveSync account has no server rights
     ${status} =    Route    PUT    /ci-forbidden-${SCENARIO}    -u '${sync_auth}'
     Should Be Equal    ${status}    401
 
+Add an account with its own database
+    ${output}    ${rc} =    Run action    add-account    {"username": "alice", "database": "alice-notes"}
+    Should Be Equal As Integers    ${rc}    0    add-account failed: ${output}
+    &{alice} =    Evaluate    json.loads(r'''${output}''')    modules=json
+    Should Be Equal    ${alice.database}    alice-notes
+    Set Suite Variable    ${alice_auth}    alice:${alice.password}
+    ${status} =    Route    PUT    /alice-notes/note    -u '${alice_auth}'    -H 'Content-Type: application/json'    -d '{"a":1}'
+    Should Be Equal    ${status}    201
+    ${output} =    Execute Command    api-cli run module/${module_id}/get-configuration
+    Should Contain    ${output}    alice-notes
+
+Accounts cannot reach each other's database
+    ${status} =    Route    GET    /${DATABASE}    -u '${alice_auth}'
+    Should Be Equal    ${status}    403
+    ${status} =    Route    GET    /alice-notes    -u '${sync_auth}'
+    Should Be Equal    ${status}    403
+
+Duplicate account names and databases are rejected
+    ${output}    ${rc} =    Run action    add-account    {"username": "alice", "database": "other-notes"}
+    Should Not Be Equal As Integers    ${rc}    0
+    Should Contain    ${output}    username_exists
+    ${output}    ${rc} =    Run action    add-account    {"username": "bob", "database": "alice-notes"}
+    Should Not Be Equal As Integers    ${rc}    0
+    Should Contain    ${output}    database_in_use
+    ${output}    ${rc} =    Run action    add-account    {"username": "admin", "database": "admin-notes"}
+    Should Not Be Equal As Integers    ${rc}    0
+
+Delete an account and keep its database
+    ${output}    ${rc} =    Run action    add-account    {"username": "bob", "database": "bob-notes"}
+    Should Be Equal As Integers    ${rc}    0    add-account failed: ${output}
+    ${output}    ${rc} =    Run action    remove-account    {"username": "bob", "delete_database": false}
+    Should Be Equal As Integers    ${rc}    0    remove-account failed: ${output}
+    ${admin} =    Execute Command    runagent -m ${module_id} sh -c '. ./couchdb.env && printf %s "$COUCHDB_USER:$COUCHDB_PASSWORD"'
+    ${status} =    Route    GET    /bob-notes    -u '${admin}'
+    Should Be Equal    ${status}    200
+    ${output} =    Execute Command    api-cli run module/${module_id}/get-configuration
+    Should Not Contain    ${output}    bob-notes
+
+Delete an account with its database
+    ${output}    ${rc} =    Run action    remove-account    {"username": "alice", "delete_database": true}
+    Should Be Equal As Integers    ${rc}    0    remove-account failed: ${output}
+    ${status} =    Route    GET    /alice-notes    -u '${alice_auth}'
+    Should Not Be Equal    ${status}    200
+    ${admin} =    Execute Command    runagent -m ${module_id} sh -c '. ./couchdb.env && printf %s "$COUCHDB_USER:$COUCHDB_PASSWORD"'
+    ${status} =    Route    GET    /alice-notes    -u '${admin}'
+    Should Be Equal    ${status}    404
+    # The default account is untouched
+    ${status} =    Route    GET    /${DATABASE}    -u '${sync_auth}'
+    Should Be Equal    ${status}    200
+
 Volumes and credentials are in the backup
     ${include} =    Execute Command    runagent -m ${module_id} sh -c 'cat ../etc/state-include.conf'
-    FOR    ${line}    IN    state/couchdb.env    state/sync.env    volumes/couchdb-data    volumes/couchdb-etc
+    FOR    ${line}    IN    state/couchdb.env    state/accounts.json    volumes/couchdb-data    volumes/couchdb-etc
         Should Match Regexp    ${include}    (?m)^${line}$
     END
     ${rc} =    Execute Command    runagent -m ${module_id} podman volume exists couchdb-data
@@ -197,9 +263,10 @@ Module UI loads in cluster-admin
     # enabled and filled after get-configuration has completed
     Wait For Elements State    iframe >>> input[placeholder="livesync.example.org"]    enabled    timeout=30s
     Get Property    iframe >>> input[placeholder="livesync.example.org"]    value    ==    ${HOST}
-    Get Property    iframe >>> input[placeholder="obsidiannotes"]    value    ==    ${DATABASE}
-    Get Property    iframe >>> input#livesync-username    value    ==    livesync
     Get Property    iframe >>> input#livesync-uri    value    ==    https://${HOST}
+    Get Property    iframe >>> input#account-username-livesync    value    ==    livesync
+    Get Property    iframe >>> input#account-database-livesync    value    ==    ${DATABASE}
+    Get Property    iframe >>> input#account-password-livesync    type    ==    password
     Take Screenshot    filename=${OUTPUT DIR}/browser/screenshot/2._Settings.png
     Close Browser
 

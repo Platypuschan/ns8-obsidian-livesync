@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Add sync account",
+    "$id": "http://nethserver.org/json-schema/task/input/obsidian-livesync/add-account",
+    "description": "Create a sync account with a database of its own and a generated password",
+    "examples": [
+        {
+            "username": "alice",
+            "database": "alice-notes"
+        }
+    ],
+    "type": "object",
+    "required": [
+        "username",
+        "database"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "username": {
+            "type": "string",
+            "title": "User name",
+            "description": "CouchDB user name of the account",
+            "pattern": "^[a-z][a-z0-9._-]{0,63}$"
+        },
+        "database": {
+            "type": "string",
+            "title": "Database name",
+            "description": "CouchDB database of the vault",
+            "pattern": "^[a-z][a-z0-9_$()+-]*$",
+            "maxLength": 238
+        }
+    }
+}
