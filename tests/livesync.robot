@@ -60,7 +60,7 @@ Configure current module
 Route
     [Arguments]    ${method}    ${path}    @{options}
     ${extra} =    Catenate    @{options}
-    ${output}    ${rc} =    Execute Command    curl -sS --max-time 10 --resolve ${HOST}:80:127.0.0.1 -o /dev/null -w '%{http_code}' -X ${method} ${extra} 'http://${HOST}${path}'
+    ${output}    ${rc} =    Execute Command    curl -sS --max-time 10 --resolve ${HOST}:80:127.0.0.1 -o /dev/null -w '\%{http_code}' -X ${method} ${extra} 'http://${HOST}${path}'
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}    0    curl failed: ${output}
     RETURN    ${output}
