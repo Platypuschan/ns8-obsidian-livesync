@@ -1,0 +1,21 @@
+{
+  "name": "Obsidian LiveSync",
+  "description": {
+    "en": "CouchDB server for the Self-hosted LiveSync plugin of Obsidian.",
+    "de": "CouchDB-Server für das Obsidian-Plugin Self-hosted LiveSync."
+  },
+  "categories": [
+    "collaboration"
+  ],
+  "authors": [
+    {
+      "name": "Platypuschan"
+    }
+  ],
+  "docs": {
+    "documentation_url": "https://github.com/vrtmrz/obsidian-livesync",
+    "bug_url": "https://github.com/Platypuschan/ns8-obsidian-livesync/issues",
+    "code_url": "https://github.com/Platypuschan/ns8-obsidian-livesync"
+  },
+  "source": "ghcr.io/platypuschan/obsidian-livesync"
+}

@@ -1,0 +1,55 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Get Obsidian LiveSync settings",
+    "$id": "http://nethserver.org/json-schema/task/output/obsidian-livesync/get-configuration",
+    "description": "Get Obsidian LiveSync settings and the connection data for the plugin",
+    "examples": [
+        {
+            "host": "livesync.domain.org",
+            "http2https": true,
+            "lets_encrypt": true,
+            "database": "obsidiannotes",
+            "url": "https://livesync.domain.org",
+            "username": "livesync",
+            "password": "secret"
+        }
+    ],
+    "type": "object",
+    "required": [
+        "host",
+        "http2https",
+        "lets_encrypt",
+        "database",
+        "url",
+        "username",
+        "password"
+    ],
+    "properties": {
+        "host": {
+            "type": "string",
+            "description": "Host name for the server, like 'livesync.domain.org'"
+        },
+        "lets_encrypt": {
+            "type": "boolean"
+        },
+        "http2https": {
+            "type": "boolean"
+        },
+        "database": {
+            "type": "string",
+            "description": "CouchDB database of the vault"
+        },
+        "url": {
+            "type": "string",
+            "description": "Server URI to enter in the plugin; empty before the first configuration"
+        },
+        "username": {
+            "type": "string",
+            "description": "LiveSync account name"
+        },
+        "password": {
+            "type": "string",
+            "description": "LiveSync account password"
+        }
+    }
+}

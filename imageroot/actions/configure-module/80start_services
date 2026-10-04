@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+set -e
+
+# Redirect any output to the journal (stderr)
+exec 1>&2
+
+# enable loads the unit; reset-failed fails on a unit that is not loaded yet.
+systemctl --user enable couchdb.service
+# A previous failed start can have hit the start rate limit; clear it first.
+systemctl --user reset-failed couchdb.service
+# The server settings are static, so a running CouchDB needs no restart.
+systemctl --user start couchdb.service

@@ -1,0 +1,79 @@
+{
+  "common": {
+    "required": "Required",
+    "work_in_progress": "Work in progress",
+    "processing": "Processing..."
+  },
+  "status": {
+    "title": "Status",
+    "app_instance": "App instance",
+    "services": "Service | Services",
+    "app_images": "App image | App images",
+    "app_volumes": "App volume | App volumes",
+    "installation_node": "Installation node",
+    "node": "Node",
+    "name": "Name",
+    "size": "Size",
+    "created": "Created",
+    "mount": "Mount",
+    "no_services": "No services",
+    "no_images": "No images",
+    "no_volumes": "No volumes"
+  },
+  "settings": {
+    "title": "Settings",
+    "configure_instance": "Configure {instance}",
+    "save": "Save",
+    "lets_encrypt": "Request LE Certificate",
+    "http_to_https": "Force HTTPS",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "configuring": "Configuring",
+    "instance_configuration": "Configure Obsidian LiveSync",
+    "domain_already_used_in_traefik": "Domain already used in traefik",
+    "host_pattern": "Must be a valid fully qualified domain name",
+    "host_format": "Must be a valid fully qualified domain name",
+    "livesync_fqdn": "LiveSync server hostname (FQDN)",
+    "database": "Database name",
+    "database_helper": "CouchDB database for the vault. A new name creates a new, empty database; existing databases are never deleted.",
+    "database_pattern": "Must start with a lowercase letter and contain only lowercase letters, digits and _ $ ( ) + -",
+    "database_maxLength": "Must be at most 238 characters long",
+    "connection_title": "Connection for Self-hosted LiveSync",
+    "connection_description": "Enter these values in the Self-hosted LiveSync plugin of Obsidian (remote type CouchDB).",
+    "https_warning_title": "HTTPS certificate",
+    "https_warning_description": "Obsidian on iOS and Android only connects to servers with a valid certificate. Request a Let's Encrypt certificate or use another trusted certificate for this host.",
+    "server_uri": "Server URI",
+    "username": "Username",
+    "password": "Password",
+    "database_name": "Database name",
+    "passphrase_hint": "Also enable end-to-end encryption in the plugin and keep its passphrase safe: it is not stored on this server and cannot be recovered."
+  },
+  "about": {
+    "title": "About"
+  },
+  "task": {
+    "cannot_create_task": "Cannot create task {action}"
+  },
+  "action": {
+    "get-status": "Get status",
+    "get-configuration": "Get configuration",
+    "configure-module": "Configure module",
+    "get-module-info": "Get module info",
+    "get-name": "Get name",
+    "list-backup-repositories": "List backup repositories",
+    "list-backups": "List backups",
+    "list-installed-modules": "List installed modules"
+  },
+  "error": {
+    "error": "Error",
+    "generic_error": "Something went wrong",
+    "validation_error": "Validation error",
+    "network_error": "Network error",
+    "network_timeout": "Network timeout",
+    "401": "Invalid authentication",
+    "403": "Operation not authorized",
+    "404": "Resource not found",
+    "cannot_retrieve_module_info": "Cannot retrieve module info",
+    "cannot_retrieve_installed_modules": "Cannot retrieve installed modules"
+  }
+}

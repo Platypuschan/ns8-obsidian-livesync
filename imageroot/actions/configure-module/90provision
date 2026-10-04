@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Create the LiveSync account and database and grant the account access.
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_setup
+
+(admin_user, admin_password), (sync_user, sync_password) = livesync_setup.ensure_credentials()
+client = livesync_setup.CouchDB(
+    "http://127.0.0.1:" + os.environ["TCP_PORT"], admin_user, admin_password
+)
+try:
+    livesync_setup.provision(client, os.environ["LIVESYNC_DATABASE"], sync_user, sync_password)
+except livesync_setup.ProvisioningError as error:
+    print(error, file=sys.stderr)
+    sys.exit(1)

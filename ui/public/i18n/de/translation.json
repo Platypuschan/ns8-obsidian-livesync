@@ -1,0 +1,80 @@
+{
+    "error": {
+        "403": "Operation nicht zugelassen",
+        "cannot_retrieve_installed_modules": "installierte Module nicht abrufbar",
+        "401": "fehlerhafte Anmeldung",
+        "cannot_retrieve_module_info": "Modulinfo nicht abrufbar",
+        "generic_error": "Etwas ist schief gegangen",
+        "error": "Fehler",
+        "network_timeout": "Netzwerk Timeout",
+        "404": "Ressource nicht gefunden",
+        "network_error": "Netzwerkfehler",
+        "validation_error": "Fehlerhafte Prüfung"
+    },
+    "settings": {
+        "test_field": "Testfeld",
+        "lets_encrypt": "Let's-Encrypt-Zertifikat anfordern",
+        "http_to_https": "HTTPS erzwingen",
+        "enabled": "Aktiviert",
+        "disabled": "Deaktiviert",
+        "configuring": "Konfiguration läuft",
+        "instance_configuration": "Obsidian LiveSync konfigurieren",
+        "domain_already_used_in_traefik": "Domain wird bereits in Traefik verwendet",
+        "host_pattern": "Muss ein gültiger vollqualifizierter Domainname sein",
+        "host_format": "Muss ein gültiger vollqualifizierter Domainname sein",
+        "configure_instance": "{instance} konfigurieren",
+        "save": "Speichern",
+        "title": "Einstellungen",
+        "livesync_fqdn": "Hostname des LiveSync-Servers (FQDN)",
+        "database": "Datenbankname",
+        "database_helper": "CouchDB-Datenbank für den Vault. Ein neuer Name legt eine neue, leere Datenbank an; vorhandene Datenbanken werden nie gelöscht.",
+        "database_pattern": "Muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern und _ $ ( ) + - enthalten",
+        "database_maxLength": "Darf höchstens 238 Zeichen lang sein",
+        "connection_title": "Verbindung für Self-hosted LiveSync",
+        "connection_description": "Diese Werte im Obsidian-Plugin Self-hosted LiveSync eintragen (Remote-Typ CouchDB).",
+        "https_warning_title": "HTTPS-Zertifikat",
+        "https_warning_description": "Obsidian unter iOS und Android verbindet sich nur mit Servern mit gültigem Zertifikat. Ein Let's-Encrypt-Zertifikat anfordern oder ein anderes vertrauenswürdiges Zertifikat für diesen Host verwenden.",
+        "server_uri": "Server-URI",
+        "username": "Benutzername",
+        "password": "Passwort",
+        "database_name": "Datenbankname",
+        "passphrase_hint": "Im Plugin zusätzlich die Ende-zu-Ende-Verschlüsselung aktivieren und die Passphrase sicher aufbewahren: Sie wird nicht auf diesem Server gespeichert und kann nicht wiederhergestellt werden."
+    },
+    "common": {
+        "required": "erforderlich",
+        "work_in_progress": "In Arbeit",
+        "processing": "Ausführung..."
+    },
+    "status": {
+        "created": "erstellt",
+        "size": "Größe",
+        "name": "Name",
+        "no_images": "Keine Abbilder",
+        "app_volumes": "App Volumen | App Volumen",
+        "services": "Dienst | Dienste",
+        "app_images": "App-Abbild | App-Abbilder",
+        "no_services": "Keine Dienste",
+        "app_instance": "App-Instanz",
+        "mount": "Einbindepunkt",
+        "title": "Status",
+        "installation_node": "Knoten der Installation",
+        "node": "Knoten",
+        "no_volumes": "keine Volumen"
+    },
+    "about": {
+        "title": "Über"
+    },
+    "action": {
+        "list-backup-repositories": "Liste der Datensicherungs-Speicherort",
+        "get-module-info": "Informationen zum Modul abrufen",
+        "list-installed-modules": "installierte Module auflisten",
+        "list-backups": "Datensicherungen auflisten",
+        "get-status": "Status abfragen",
+        "configure-module": "Modul konfigurieren",
+        "get-configuration": "Konfiguration abrufen",
+        "get-name": "Name abrufen"
+    },
+    "task": {
+        "cannot_create_task": "{task} kann nicht erstellt werden"
+    }
+}
