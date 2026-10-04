@@ -45,11 +45,14 @@ Get configuration
 Get account
     [Arguments]    ${username}
     ${config} =    Get configuration
-    ${account} =    Evaluate    next(filter(lambda item: item['username'] == $username, $config['accounts']), None)
+    # $username is bound as a default argument: Robot variables are not
+    # visible inside a lambda body
+    ${account} =    Evaluate    next(filter(lambda item, name=$username: item['username'] == name, $config['accounts']), None)
     RETURN    ${account}
 
 Sync accounts
-    Run task    module/${module_id}    sync-accounts
+    ${report} =    Run task    module/${module_id}    sync-accounts
+    Log    ${report}    console=${True}
 
 CouchDB status
     [Arguments]    ${method}    ${path}    ${auth}    @{options}
@@ -105,6 +108,7 @@ An unknown group is rejected
 
 Group members get accounts with their own database
     ${config} =    Get configuration
+    Log    ${config.ad_last_sync}    console=${True}
     Should Be True    ${config.ad_enabled}
     Should Be True    ${config.ad_last_sync['ok']}    ${config.ad_last_sync}
     ${anna} =    Get account    anna

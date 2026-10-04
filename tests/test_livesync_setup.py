@@ -361,6 +361,15 @@ class ADRunSyncTest(unittest.TestCase):
 
 
 class ADFilterTest(unittest.TestCase):
+    def test_member_names_accepts_list_and_plain_values(self):
+        results = [
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": ["Anna"]}},
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": "bert.b"}},
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": []}},
+            {"type": "searchResRef", "uri": ["ldap://elsewhere"]},
+        ]
+        self.assertEqual(livesync_ad.member_names(results), {"anna", "bert.b"})
+
     def test_filter_escapes_the_group_and_excludes_disabled_users(self):
         dn = "CN=Obsidian (Sync),CN=Users,DC=ad,DC=test"
         direct = livesync_ad.members_filter(dn, nested=False, hidden_users_clause="(!(|(sAMAccountName=krbtgt)))")

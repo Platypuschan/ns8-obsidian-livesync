@@ -32,6 +32,24 @@ def members_filter(group_dn, nested, hidden_users_clause=""):
     ])
 
 
+def member_names(results):
+    """Lower-case sAMAccountNames from a paged search result.
+
+    Without schema information (get_info=NONE) ldap3 returns every attribute
+    as a list, with schema as a plain value; accept both.
+    """
+    names = set()
+    for entry in results:
+        if entry.get("type") != "searchResEntry":
+            continue
+        value = entry.get("attributes", {}).get("sAMAccountName")
+        if isinstance(value, (list, tuple)):
+            value = value[0] if len(value) == 1 else None
+        if value:
+            names.add(str(value).lower())
+    return names
+
+
 def domain_settings(domain_name):
     from agent.ldapproxy import Ldapproxy
 
@@ -102,11 +120,7 @@ def group_members(domain_name, group, nested):
             paged_size=500,
             generator=False,
         )
-        return {
-            str(entry["attributes"]["sAMAccountName"]).lower()
-            for entry in results
-            if entry.get("type") == "searchResEntry" and entry["attributes"].get("sAMAccountName")
-        }
+        return member_names(results)
     except ADError:
         raise
     except Exception as error:
