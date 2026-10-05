@@ -25,4 +25,27 @@ agent.set_env("LIVESYNC_DATABASE", database)
 # the password is generated once and kept, also across restores.
 livesync_setup.ensure_admin_credentials()
 with livesync_setup.accounts_lock():
-    livesync_setup.ensure_accounts(database)
+    accounts = livesync_setup.ensure_accounts(database)
+
+    # AD sync settings change only when the request carries them (clone and
+    # restore send host settings only).
+    if "ad_enabled" in data:
+        was_enabled = bool(os.environ.get("LIVESYNC_AD_DOMAIN"))
+        if data["ad_enabled"]:
+            domain = data["ad_domain"].strip()
+            agent.set_env("LIVESYNC_AD_DOMAIN", domain)
+            agent.set_env("LIVESYNC_AD_GROUP", data["ad_group"].strip())
+            agent.set_env("LIVESYNC_AD_NESTED", bool(data.get("ad_nested_groups", False)))
+            agent.bind_user_domains([domain])
+        else:
+            agent.set_env("LIVESYNC_AD_DOMAIN", "")
+            agent.set_env("LIVESYNC_AD_GROUP", data.get("ad_group", os.environ.get("LIVESYNC_AD_GROUP", "")).strip())
+            agent.set_env("LIVESYNC_AD_NESTED", bool(data.get("ad_nested_groups", False)))
+            agent.bind_user_domains([])
+            if was_enabled and livesync_setup.release_ad_accounts(accounts):
+                livesync_setup.write_accounts(accounts)
+    elif os.environ.get("LIVESYNC_AD_DOMAIN"):
+        # Restore or clone: renew the domain binding of the copied settings.
+        # Not fatal: the domain may not exist in this cluster (yet); the
+        # user-domain-changed event binds it when it is added.
+        agent.bind_user_domains([os.environ["LIVESYNC_AD_DOMAIN"]])

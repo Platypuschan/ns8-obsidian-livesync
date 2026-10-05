@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Match the sync accounts to the AD group now ("Sync now" button).
+
+import json
+import os
+import sys
+
+import agent
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_ad
+import livesync_setup
+
+if livesync_ad.configured() is None:
+    agent.set_status("validation-failed")
+    json.dump([{"field": "ad_enabled", "parameter": "ad_enabled", "value": False, "error": "ad_sync_disabled"}], fp=sys.stdout)
+    sys.exit(2)
+try:
+    report = livesync_ad.run_sync()
+except (livesync_ad.ADError, livesync_setup.ProvisioningError) as error:
+    print(error, file=sys.stderr)
+    sys.exit(1)
+json.dump(report, fp=sys.stdout)

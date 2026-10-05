@@ -9,6 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_ad
 import livesync_setup
 
 host = os.getenv("TRAEFIK_HOST", "")
@@ -22,6 +23,17 @@ if accounts is None:
         "database": os.getenv("LIVESYNC_DATABASE", livesync_setup.DEFAULT_DATABASE),
     }] if legacy.get("LIVESYNC_USER") else []
 
+accounts = [
+    {
+        "username": account["username"],
+        "password": account["password"],
+        "database": account["database"],
+        "source": account.get("source", livesync_setup.SOURCE_MANUAL),
+        "enabled": account.get("enabled", True),
+    }
+    for account in accounts
+]
+
 config = {
     "host": host,
     "http2https": os.getenv("TRAEFIK_HTTP2HTTPS") == "True",
@@ -29,6 +41,12 @@ config = {
     # Obsidian on mobile devices only connects over HTTPS.
     "url": f"https://{host}" if host else "",
     "accounts": accounts,
+    "ad_enabled": bool(os.getenv("LIVESYNC_AD_DOMAIN")),
+    "ad_domain": os.getenv("LIVESYNC_AD_DOMAIN", ""),
+    "ad_group": os.getenv("LIVESYNC_AD_GROUP", ""),
+    "ad_nested_groups": os.getenv("LIVESYNC_AD_NESTED") == "True",
+    # Outcome of the last AD sync, or null
+    "ad_last_sync": livesync_ad.read_status(),
 }
 
 json.dump(config, fp=sys.stdout)

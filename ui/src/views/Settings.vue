@@ -61,6 +61,71 @@
                 $t("settings.enabled")
               }}</template>
             </cv-toggle>
+            <cv-toggle
+              value="adEnabled"
+              :label="$t('settings.ad_enabled')"
+              v-model="adEnabled"
+              :disabled="loading.getConfiguration || loading.configureModule"
+              class="mg-bottom"
+            >
+              <template slot="text-left">{{
+                $t("settings.disabled")
+              }}</template>
+              <template slot="text-right">{{
+                $t("settings.enabled")
+              }}</template>
+            </cv-toggle>
+            <template v-if="adEnabled">
+              <p class="mg-bottom helper">
+                {{ $t("settings.ad_description") }}
+              </p>
+              <NsInlineNotification
+                v-if="error.listUserDomains"
+                kind="error"
+                :title="$t('action.list-user-domains')"
+                :description="error.listUserDomains"
+                :showCloseButton="false"
+              />
+              <NsComboBox
+                v-model="adDomain"
+                :options="adDomains"
+                auto-highlight
+                :title="$t('settings.ad_domain')"
+                :label="$t('settings.ad_domain_placeholder')"
+                :invalid-message="$t(error.ad_domain)"
+                :disabled="
+                  loading.getConfiguration ||
+                  loading.configureModule ||
+                  loading.listUserDomains
+                "
+                class="mg-bottom"
+                ref="ad_domain"
+              />
+              <cv-text-input
+                id="ad-group"
+                :label="$t('settings.ad_group')"
+                placeholder="obsidian-users"
+                v-model.trim="adGroup"
+                :invalid-message="$t(error.ad_group)"
+                :disabled="loading.getConfiguration || loading.configureModule"
+                class="mg-bottom"
+                ref="ad_group"
+              />
+              <cv-toggle
+                value="adNestedGroups"
+                :label="$t('settings.ad_nested_groups')"
+                v-model="adNestedGroups"
+                :disabled="loading.getConfiguration || loading.configureModule"
+                class="mg-bottom"
+              >
+                <template slot="text-left">{{
+                  $t("settings.disabled")
+                }}</template>
+                <template slot="text-right">{{
+                  $t("settings.enabled")
+                }}</template>
+              </cv-toggle>
+            </template>
             <cv-row v-if="error.configureModule">
               <cv-column>
                 <NsInlineNotification
@@ -102,6 +167,45 @@
             readonly
             class="mg-bottom"
           />
+          <div v-if="adConfigured" class="mg-bottom">
+            <NsInlineNotification
+              v-if="adLastSync && !adLastSync.ok"
+              kind="error"
+              :title="$t('settings.ad_sync_failed')"
+              :description="adLastSync.error"
+              :showCloseButton="false"
+            />
+            <p v-else-if="adLastSync" class="mg-bottom" id="ad-sync-status">
+              {{
+                $t("settings.ad_sync_status", {
+                  time: new Date(adLastSync.time * 1000).toLocaleString(),
+                  members: adLastSync.members,
+                })
+              }}
+            </p>
+            <NsInlineNotification
+              v-if="error.syncAccounts"
+              kind="error"
+              :title="$t('action.sync-accounts')"
+              :description="error.syncAccounts"
+              :showCloseButton="false"
+            />
+            <NsButton
+              kind="secondary"
+              :icon="Restart20"
+              :loading="loading.syncAccounts"
+              :disabled="loading.getConfiguration || loading.syncAccounts"
+              @click="syncAccounts"
+              >{{ $t("settings.ad_sync_now") }}</NsButton
+            >
+          </div>
+          <NsInlineNotification
+            v-if="error.resetDatabase"
+            kind="error"
+            :title="$t('action.reset-database')"
+            :description="error.resetDatabase"
+            :showCloseButton="false"
+          />
           <NsInlineNotification
             v-if="error.removeAccount"
             kind="error"
@@ -126,10 +230,18 @@
               readonly
             />
             <cv-text-input
+              v-if="account.enabled"
               :id="'account-password-' + account.username"
               :label="$t('settings.password')"
               :value="account.password"
               type="password"
+              readonly
+            />
+            <cv-text-input
+              v-else
+              :id="'account-password-' + account.username"
+              :label="$t('settings.password')"
+              :value="$t('settings.account_locked')"
               readonly
             />
             <cv-text-input
@@ -138,13 +250,42 @@
               :value="account.database"
               readonly
             />
-            <NsButton
-              kind="danger--ghost"
-              :icon="TrashCan20"
-              :disabled="loading.getConfiguration"
-              @click="showRemoveModal(account)"
-              >{{ $t("settings.remove_account") }}</NsButton
-            >
+            <div class="account-meta">
+              <cv-tag
+                :id="'account-source-' + account.username"
+                :kind="account.source === 'ad' ? 'blue' : 'gray'"
+                :label="
+                  account.source === 'ad'
+                    ? $t('settings.source_ad')
+                    : $t('settings.source_manual')
+                "
+              />
+              <cv-tag
+                v-if="!account.enabled"
+                kind="red"
+                :label="$t('settings.account_locked_tag')"
+              />
+            </div>
+            <div class="account-actions">
+              <NsButton
+                v-if="account.enabled"
+                kind="ghost"
+                size="small"
+                :icon="Reset20"
+                :disabled="loading.getConfiguration"
+                @click="showResetModal(account)"
+                >{{ $t("settings.reset_database") }}</NsButton
+              >
+              <NsButton
+                v-if="account.source !== 'ad' || !account.enabled"
+                kind="danger--ghost"
+                size="small"
+                :icon="TrashCan20"
+                :disabled="loading.getConfiguration"
+                @click="showRemoveModal(account)"
+                >{{ $t("settings.remove_account") }}</NsButton
+              >
+            </div>
           </div>
           <NsButton
             kind="secondary"
@@ -248,6 +389,36 @@
         $t("settings.remove_account")
       }}</template>
     </NsModal>
+    <!-- reset database -->
+    <NsModal
+      kind="danger"
+      size="default"
+      :visible="isResetModalShown"
+      :isLoading="loading.resetDatabase"
+      :primary-button-disabled="loading.resetDatabase"
+      :autoHideOff="loading.resetDatabase"
+      @modal-hidden="isResetModalShown = false"
+      @secondary-click="isResetModalShown = false"
+      @primary-click="resetDatabase"
+    >
+      <template slot="title">{{
+        $t("settings.reset_database_title", {
+          database: accountToReset.database,
+        })
+      }}</template>
+      <template slot="content">
+        <NsInlineNotification
+          kind="warning"
+          :title="$t('settings.remove_account_database_warning')"
+          :showCloseButton="false"
+        />
+        <p>{{ $t("settings.reset_database_description") }}</p>
+      </template>
+      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
+      <template slot="primary-button">{{
+        $t("settings.reset_database")
+      }}</template>
+    </NsModal>
   </cv-grid>
 </template>
 
@@ -296,17 +467,37 @@ export default {
         database: "",
       },
       deleteDatabase: false,
+      isResetModalShown: false,
+      accountToReset: {
+        username: "",
+        database: "",
+      },
+      adEnabled: false,
+      adConfigured: false,
+      adDomain: "",
+      adDomains: [],
+      adGroup: "",
+      adNestedGroups: false,
+      adLastSync: null,
       loading: {
         getConfiguration: false,
         configureModule: false,
         addAccount: false,
         removeAccount: false,
+        resetDatabase: false,
+        syncAccounts: false,
+        listUserDomains: false,
       },
       error: {
         getConfiguration: "",
         configureModule: "",
         addAccount: "",
         removeAccount: "",
+        resetDatabase: "",
+        syncAccounts: "",
+        listUserDomains: "",
+        ad_domain: "",
+        ad_group: "",
         host: "",
         lets_encrypt: "",
         http2https: "",
@@ -320,6 +511,7 @@ export default {
   },
   created() {
     this.getConfiguration();
+    this.listUserDomains();
   },
   beforeRouteEnter(to, from, next) {
     next((vm) => {
@@ -385,6 +577,12 @@ export default {
       this.isHttpToHttpsEnabled = config.http2https;
       this.url = config.url;
       this.accounts = config.accounts;
+      this.adEnabled = config.ad_enabled;
+      this.adConfigured = config.ad_enabled;
+      this.adDomain = config.ad_domain;
+      this.adGroup = config.ad_group;
+      this.adNestedGroups = config.ad_nested_groups;
+      this.adLastSync = config.ad_last_sync;
 
       this.loading.getConfiguration = false;
       this.focusElement("host");
@@ -398,6 +596,20 @@ export default {
 
         if (isValidationOk) {
           this.focusElement("host");
+        }
+        isValidationOk = false;
+      }
+      if (this.adEnabled && !this.adDomain) {
+        this.error.ad_domain = "settings.ad_domain_required";
+        if (isValidationOk) {
+          this.focusElement("ad_domain");
+        }
+        isValidationOk = false;
+      }
+      if (this.adEnabled && !this.adGroup) {
+        this.error.ad_group = "settings.ad_group_required";
+        if (isValidationOk) {
+          this.focusElement("ad_group");
         }
         isValidationOk = false;
       }
@@ -427,6 +639,10 @@ export default {
           host: this.host,
           lets_encrypt: this.isLetsEncryptEnabled,
           http2https: this.isHttpToHttpsEnabled,
+          ad_enabled: this.adEnabled,
+          ad_domain: this.adDomain,
+          ad_group: this.adGroup,
+          ad_nested_groups: this.adNestedGroups,
         },
         {
           aborted: this.configureModuleAborted,
@@ -562,6 +778,100 @@ export default {
       this.isRemoveModalShown = false;
       this.getConfiguration();
     },
+    showResetModal(account) {
+      this.accountToReset = account;
+      this.error.resetDatabase = "";
+      this.isResetModalShown = true;
+    },
+    async resetDatabase() {
+      this.loading.resetDatabase = true;
+      this.error.resetDatabase = "";
+      const err = await this.runTask(
+        "reset-database",
+        { username: this.accountToReset.username },
+        {
+          aborted: this.resetDatabaseAborted,
+          completed: this.resetDatabaseCompleted,
+        }
+      );
+      if (err) {
+        console.error("error creating task reset-database", err);
+        this.error.resetDatabase = this.getErrorMessage(err);
+        this.loading.resetDatabase = false;
+        this.isResetModalShown = false;
+      }
+    },
+    resetDatabaseAborted(taskResult, taskContext) {
+      console.error(`${taskContext.action} aborted`, taskResult);
+      this.error.resetDatabase = this.$t("error.generic_error");
+      this.loading.resetDatabase = false;
+      this.isResetModalShown = false;
+    },
+    resetDatabaseCompleted() {
+      this.loading.resetDatabase = false;
+      this.isResetModalShown = false;
+    },
+    async syncAccounts() {
+      this.loading.syncAccounts = true;
+      this.error.syncAccounts = "";
+      const err = await this.runTask("sync-accounts", undefined, {
+        aborted: this.syncAccountsAborted,
+        completed: this.syncAccountsCompleted,
+      });
+      if (err) {
+        console.error("error creating task sync-accounts", err);
+        this.error.syncAccounts = this.getErrorMessage(err);
+        this.loading.syncAccounts = false;
+      }
+    },
+    syncAccountsAborted(taskResult, taskContext) {
+      console.error(`${taskContext.action} aborted`, taskResult);
+      this.loading.syncAccounts = false;
+      // The task stores its error; show it with the account list
+      this.getConfiguration();
+    },
+    syncAccountsCompleted() {
+      this.loading.syncAccounts = false;
+      this.getConfiguration();
+    },
+    async listUserDomains() {
+      this.loading.listUserDomains = true;
+      this.error.listUserDomains = "";
+      const action = "list-user-domains";
+      const eventId = this.getUuid();
+      this.core.$root.$once(`${action}-aborted-${eventId}`, () => {
+        this.error.listUserDomains = this.$t("error.generic_error");
+        this.loading.listUserDomains = false;
+      });
+      this.core.$root.$once(
+        `${action}-completed-${eventId}`,
+        (taskContext, taskResult) => {
+          this.adDomains = taskResult.output.domains
+            .filter((domain) => domain.schema === "ad")
+            .map((domain) => ({
+              name: domain.name,
+              label: domain.name,
+              value: domain.name,
+            }));
+          this.loading.listUserDomains = false;
+        }
+      );
+      const res = await to(
+        this.createClusterTaskForApp({
+          action,
+          extra: {
+            title: this.$t("action." + action),
+            isNotificationHidden: true,
+            eventId,
+          },
+        })
+      );
+      if (res[0]) {
+        console.error(`error creating task ${action}`, res[0]);
+        this.error.listUserDomains = this.getErrorMessage(res[0]);
+        this.loading.listUserDomains = false;
+      }
+    },
   },
 };
 </script>
@@ -579,5 +889,17 @@ export default {
   align-items: end;
   padding-bottom: $spacing-05;
   border-bottom: 1px solid $ui-03;
+}
+
+.account-meta,
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-03;
+  align-items: center;
+}
+
+.helper {
+  max-width: 38rem;
 }
 </style>

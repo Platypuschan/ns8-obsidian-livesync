@@ -39,6 +39,12 @@ DATABASE_MAX_LENGTH = 238
 # so they can be typed on a phone.
 USERNAME_PATTERN = re.compile(r"^[a-z][a-z0-9._-]{0,63}$")
 RESERVED_USERNAMES = {ADMIN_USER}
+# Accounts are created by hand ("manual") or from the members of an AD
+# group ("ad"). An AD account whose user left the group is kept disabled: no
+# CouchDB user, no password, its database stays.
+SOURCE_MANUAL = "manual"
+SOURCE_AD = "ad"
+AD_DATABASE_PREFIX = "notes-"
 
 
 class ProvisioningError(Exception):
@@ -175,11 +181,26 @@ def ensure_accounts(database=None, state_dir="."):
             "username": DEFAULT_USER,
             "password": new_password(),
             "database": database or DEFAULT_DATABASE,
+            "source": SOURCE_MANUAL,
+            "enabled": True,
         }]
         write_accounts(accounts, state_dir)
     else:
         os.chmod(os.path.join(state_dir, ACCOUNTS), 0o600)
     return accounts
+
+
+def is_ad(account):
+    return account.get("source", SOURCE_MANUAL) == SOURCE_AD
+
+
+def is_enabled(account):
+    return account.get("enabled", True)
+
+
+def ad_database_name(username):
+    # "." is valid in user names but not in database names
+    return AD_DATABASE_PREFIX + username.replace(".", "_")
 
 
 def account_errors(accounts, username, database):
@@ -304,7 +325,8 @@ def provision_account(client, account):
 def provision(client, accounts):
     wait_until_up(client)
     for account in accounts:
-        provision_account(client, account)
+        if is_enabled(account):
+            provision_account(client, account)
 
 
 def remove_user(client, user):
@@ -344,6 +366,83 @@ def delete_database(client, database):
     status, body = client.request("DELETE", "/" + quote(database))
     if status not in (200, 202, 404):
         raise ProvisioningError(f"Deleting database {database} failed with HTTP {status}: {body}")
+
+
+def reset_database(client, account):
+    """Replace the account's database with an empty one."""
+    delete_database(client, account["database"])
+    provision_account(client, account)
+
+
+def disable_account(client, account):
+    """Lock an AD account out but keep its database (admin access only)."""
+    remove_user(client, account["username"])
+    revoke_database_access(client, account["database"], account["username"])
+    account["enabled"] = False
+    account["password"] = ""
+
+
+def sync_ad_accounts(client, accounts, members, save):
+    """Make the AD accounts match the AD group members.
+
+    accounts is changed in place and passed to save() after every change,
+    so a failure halfway keeps what was already done. Returns a report.
+    """
+    report = {"created": [], "enabled": [], "disabled": [], "skipped": []}
+    by_name = {account["username"]: account for account in accounts}
+    databases = {account["database"] for account in accounts}
+
+    for name in sorted(members):
+        account = by_name.get(name)
+        if account is None:
+            database = ad_database_name(name)
+            if not valid_username(name) or not valid_database(database):
+                report["skipped"].append({"username": name, "reason": "invalid_name"})
+                continue
+            if database in databases:
+                report["skipped"].append({"username": name, "reason": "database_in_use"})
+                continue
+            account = {
+                "username": name,
+                "password": new_password(),
+                "database": database,
+                "source": SOURCE_AD,
+                "enabled": True,
+            }
+            provision_account(client, account)
+            accounts.append(account)
+            by_name[name] = account
+            databases.add(database)
+            report["created"].append(name)
+            save(accounts)
+        elif not is_ad(account):
+            report["skipped"].append({"username": name, "reason": "manual_account_exists"})
+        elif not is_enabled(account):
+            # Back in the group: same database, but a new password, so devices
+            # that kept the old one do not silently regain access.
+            account["password"] = new_password()
+            account["enabled"] = True
+            provision_account(client, account)
+            report["enabled"].append(name)
+            save(accounts)
+
+    for account in accounts:
+        if is_ad(account) and is_enabled(account) and account["username"] not in members:
+            disable_account(client, account)
+            report["disabled"].append(account["username"])
+            save(accounts)
+    return report
+
+
+def release_ad_accounts(accounts):
+    """AD sync turned off: active AD accounts become manual ones and keep
+    working; disabled ones stay disabled until they are deleted."""
+    changed = False
+    for account in accounts:
+        if is_ad(account) and is_enabled(account):
+            account["source"] = SOURCE_MANUAL
+            changed = True
+    return changed
 
 
 def remove_account(client, account, delete_data):

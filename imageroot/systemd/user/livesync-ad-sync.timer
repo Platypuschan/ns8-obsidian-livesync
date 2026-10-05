@@ -1,0 +1,16 @@
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Users who left the AD group lose access within this interval; the settings
+# page can also start a sync at once.
+
+[Unit]
+Description=Sync the Obsidian LiveSync accounts with the AD group every 5 minutes
+
+[Timer]
+OnActiveSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

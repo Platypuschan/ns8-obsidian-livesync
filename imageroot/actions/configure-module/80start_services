@@ -14,3 +14,9 @@ systemctl --user enable couchdb.service
 systemctl --user reset-failed couchdb.service
 # The server settings are static, so a running CouchDB needs no restart.
 systemctl --user start couchdb.service
+
+if [[ -n "${LIVESYNC_AD_DOMAIN}" ]]; then
+    systemctl --user enable --now livesync-ad-sync.timer
+else
+    systemctl --user disable --now livesync-ad-sync.timer
+fi

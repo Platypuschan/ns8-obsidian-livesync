@@ -21,4 +21,12 @@ for evar in [
     ]:
     agent.set_env(evar, original_environment[evar])
 
+# AD sync settings exist since 0.3.0
+for evar in [
+        "LIVESYNC_AD_DOMAIN",
+        "LIVESYNC_AD_GROUP",
+        "LIVESYNC_AD_NESTED",
+    ]:
+    agent.set_env(evar, original_environment.get(evar, ""))
+
 agent.dump_env()

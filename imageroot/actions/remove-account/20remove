@@ -26,9 +26,16 @@ client = livesync_setup.CouchDB(
 with livesync_setup.accounts_lock():
     accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
     account = next((item for item in accounts if item["username"] == username), None)
+    error = None
     if account is None:
+        error = "username_not_found"
+    elif livesync_setup.is_ad(account) and livesync_setup.is_enabled(account):
+        # The next sync would create it again; remove the user from the AD
+        # group instead.
+        error = "account_managed_by_ad"
+    if error:
         agent.set_status("validation-failed")
-        json.dump([{"field": "username", "parameter": "username", "value": username, "error": "username_not_found"}], fp=sys.stdout)
+        json.dump([{"field": "username", "parameter": "username", "value": username, "error": error}], fp=sys.stdout)
         sys.exit(2)
     try:
         livesync_setup.wait_until_up(client)

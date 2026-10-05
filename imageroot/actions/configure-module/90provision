@@ -4,22 +4,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-# Make sure every sync account and its database exist in CouchDB, e.g. after
-# a restore or when an earlier provisioning failed.
+# Make sure every enabled sync account and its database exist in CouchDB,
+# e.g. after a restore or when an earlier provisioning failed. Then match the
+# AD accounts to the AD group, if configured.
 
 import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "pypkg"))
+import livesync_ad
 import livesync_setup
 
 client = livesync_setup.CouchDB(
     "http://127.0.0.1:" + os.environ["TCP_PORT"], *livesync_setup.ensure_admin_credentials()
 )
-with livesync_setup.accounts_lock():
-    accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
-    try:
+try:
+    with livesync_setup.accounts_lock():
+        accounts = livesync_setup.ensure_accounts(os.environ.get("LIVESYNC_DATABASE"))
         livesync_setup.provision(client, accounts)
-    except livesync_setup.ProvisioningError as error:
-        print(error, file=sys.stderr)
-        sys.exit(1)
+except livesync_setup.ProvisioningError as error:
+    print(error, file=sys.stderr)
+    sys.exit(1)
+try:
+    livesync_ad.run_sync()
+except (livesync_setup.ProvisioningError, livesync_ad.ADError) as error:
+    # An unreachable AD must not break a restore or clone; the timer retries
+    # and the settings page shows the error.
+    print(f"AD account sync failed: {error}", file=sys.stderr)

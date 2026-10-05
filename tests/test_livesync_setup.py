@@ -11,12 +11,14 @@ import sys
 import tempfile
 import threading
 import unittest
+import unittest.mock
 import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "imageroot" / "pypkg"))
 
+import livesync_ad  # noqa: E402
 import livesync_setup  # noqa: E402
 
 
@@ -196,6 +198,186 @@ class ProvisioningTest(unittest.TestCase):
             livesync_setup.wait_until_up(
                 self.client, timeout=5, interval=1, clock=lambda: now[0], sleep=sleep
             )
+
+
+class ADSyncTest(unittest.TestCase):
+    ADMIN = ("admin", "admin-secret")
+
+    def setUp(self):
+        self.server = FakeCouchDB(self.ADMIN)
+        thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(self.server.server_close)
+        self.addCleanup(self.server.shutdown)
+        self.client = livesync_setup.CouchDB(self.server.url, *self.ADMIN)
+        self.saved = []
+        self.accounts = [dict(account("livesync", "pw", "obsidiannotes"), source="manual", enabled=True)]
+        livesync_setup.provision(self.client, self.accounts)
+
+    def sync(self, members):
+        return livesync_setup.sync_ad_accounts(
+            self.client, self.accounts, set(members), lambda a: self.saved.append(json.dumps(a))
+        )
+
+    def by_name(self, name):
+        return next(a for a in self.accounts if a["username"] == name)
+
+    def test_members_get_accounts_with_own_database(self):
+        report = self.sync({"anna", "bert.b"})
+        self.assertEqual(report["created"], ["anna", "bert.b"])
+        anna = self.by_name("anna")
+        self.assertEqual((anna["database"], anna["source"], anna["enabled"]), ("notes-anna", "ad", True))
+        self.assertEqual(self.by_name("bert.b")["database"], "notes-bert_b")
+        self.assertEqual(self.server.users["anna"]["password"], anna["password"])
+        self.assertEqual(self.server.databases["notes-anna"]["admins"]["names"], ["anna"])
+        self.assertEqual(len(self.saved), 2, "saved after every change")
+
+    def test_repeated_sync_changes_nothing(self):
+        self.sync({"anna"})
+        requests = len(self.server.requests)
+        report = self.sync({"anna"})
+        self.assertEqual(report, {"created": [], "enabled": [], "disabled": [], "skipped": []})
+        self.assertEqual(len(self.server.requests), requests, "no CouchDB calls without changes")
+
+    def test_leaving_the_group_locks_out_but_keeps_the_database(self):
+        self.sync({"anna"})
+        report = self.sync(set())
+        self.assertEqual(report["disabled"], ["anna"])
+        anna = self.by_name("anna")
+        self.assertEqual((anna["enabled"], anna["password"]), (False, ""))
+        self.assertNotIn("anna", self.server.users)
+        self.assertIn("notes-anna", self.server.databases)
+        self.assertEqual(self.server.databases["notes-anna"]["admins"]["names"], [])
+        # manual accounts are never touched by the sync
+        self.assertTrue(self.by_name("livesync")["enabled"])
+        self.assertIn("livesync", self.server.users)
+
+    def test_rejoining_gets_the_old_database_and_a_new_password(self):
+        self.sync({"anna"})
+        old_password = self.by_name("anna")["password"]
+        self.sync(set())
+        report = self.sync({"anna"})
+        self.assertEqual(report["enabled"], ["anna"])
+        anna = self.by_name("anna")
+        self.assertEqual(anna["database"], "notes-anna")
+        self.assertNotEqual(anna["password"], old_password)
+        self.assertEqual(self.server.users["anna"]["password"], anna["password"])
+        self.assertEqual(self.server.databases["notes-anna"]["admins"]["names"], ["anna"])
+
+    def test_conflicts_are_skipped(self):
+        self.accounts.append(dict(account("other", "x", "notes-carl"), source="manual", enabled=True))
+        report = self.sync({"livesync", "carl", "admin", "_bad"})
+        reasons = {item["username"]: item["reason"] for item in report["skipped"]}
+        self.assertEqual(reasons, {
+            "livesync": "manual_account_exists",
+            "carl": "database_in_use",
+            "admin": "invalid_name",
+            "_bad": "invalid_name",
+        })
+        self.assertEqual(report["created"], [])
+
+    def test_provision_skips_disabled_accounts(self):
+        self.sync({"anna"})
+        self.sync(set())
+        livesync_setup.provision(self.client, self.accounts)
+        self.assertNotIn("anna", self.server.users)
+
+    def test_reset_database_gives_an_empty_database(self):
+        self.sync({"anna"})
+        self.server.databases["notes-anna"]["members"]["names"].append("x")
+        livesync_setup.reset_database(self.client, self.by_name("anna"))
+        self.assertEqual(self.server.databases["notes-anna"]["admins"]["names"], ["anna"])
+        self.assertEqual(self.server.databases["notes-anna"]["members"]["names"], ["anna"])
+        deletes = [r for r in self.server.requests if r[0] == "DELETE" and r[1] == "/notes-anna"]
+        self.assertEqual(len(deletes), 1)
+
+    def test_turning_ad_off_keeps_active_accounts_working(self):
+        self.sync({"anna", "bert"})
+        self.sync({"anna"})
+        self.assertTrue(livesync_setup.release_ad_accounts(self.accounts))
+        self.assertEqual(self.by_name("anna")["source"], "manual")
+        self.assertEqual((self.by_name("bert")["source"], self.by_name("bert")["enabled"]), ("ad", False))
+        self.assertFalse(livesync_setup.release_ad_accounts(self.accounts))
+
+
+class ADRunSyncTest(unittest.TestCase):
+    """run_sync with a fake member lookup: settings, status file, errors."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.state = directory.name
+        self.server = FakeCouchDB(("admin", "secret"))
+        thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(self.server.server_close)
+        self.addCleanup(self.server.shutdown)
+        with open(os.path.join(self.state, "couchdb.env"), "w", encoding="utf-8") as stream:
+            stream.write("COUCHDB_USER=admin\nCOUCHDB_PASSWORD=secret\n")
+        environment = {
+            "TCP_PORT": str(self.server.server_address[1]),
+            "LIVESYNC_AD_DOMAIN": "ad.test",
+            "LIVESYNC_AD_GROUP": "obsidian",
+            "LIVESYNC_AD_NESTED": "True",
+        }
+        patcher = unittest.mock.patch.dict(os.environ, environment)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_sync_uses_the_settings_and_records_the_outcome(self):
+        calls = []
+
+        def lookup(domain, group, nested):
+            calls.append((domain, group, nested))
+            return {"anna"}
+
+        report = livesync_ad.run_sync(self.state, lookup)
+        self.assertEqual(calls, [("ad.test", "obsidian", True)])
+        self.assertEqual(report["created"], ["anna"])
+        names = [a["username"] for a in livesync_setup.read_accounts(self.state)]
+        self.assertEqual(names, ["livesync", "anna"])
+        status = livesync_ad.read_status(self.state)
+        self.assertTrue(status["ok"])
+        self.assertEqual(status["members"], 1)
+
+    def test_failed_lookup_changes_nothing_and_is_recorded(self):
+        livesync_ad.run_sync(self.state, lambda *args: {"anna"})
+
+        def broken(*args):
+            raise livesync_ad.ADError("The AD group 'obsidian' was not found exactly once.")
+
+        with self.assertRaises(livesync_ad.ADError):
+            livesync_ad.run_sync(self.state, broken)
+        anna = next(a for a in livesync_setup.read_accounts(self.state) if a["username"] == "anna")
+        self.assertTrue(anna["enabled"], "a failed lookup must not lock anybody out")
+        status = livesync_ad.read_status(self.state)
+        self.assertFalse(status["ok"])
+        self.assertIn("not found", status["error"])
+
+    def test_off_when_not_configured(self):
+        with unittest.mock.patch.dict(os.environ, {"LIVESYNC_AD_DOMAIN": ""}):
+            self.assertIsNone(livesync_ad.run_sync(self.state, lambda *args: {"anna"}))
+        self.assertIsNone(livesync_ad.read_status(self.state))
+
+
+class ADFilterTest(unittest.TestCase):
+    def test_member_names_accepts_list_and_plain_values(self):
+        results = [
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": ["Anna"]}},
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": "bert.b"}},
+            {"type": "searchResEntry", "attributes": {"sAMAccountName": []}},
+            {"type": "searchResRef", "uri": ["ldap://elsewhere"]},
+        ]
+        self.assertEqual(livesync_ad.member_names(results), {"anna", "bert.b"})
+
+    def test_filter_escapes_the_group_and_excludes_disabled_users(self):
+        dn = "CN=Obsidian (Sync),CN=Users,DC=ad,DC=test"
+        direct = livesync_ad.members_filter(dn, nested=False, hidden_users_clause="(!(|(sAMAccountName=krbtgt)))")
+        self.assertIn(r"(memberOf=CN=Obsidian \28Sync\29,CN=Users,DC=ad,DC=test)", direct)
+        self.assertIn("(!(userAccountControl:1.2.840.113556.1.4.803:=2))", direct)
+        self.assertTrue(direct.endswith("(!(|(sAMAccountName=krbtgt))))"))
+        nested = livesync_ad.members_filter(dn, nested=True)
+        self.assertIn("memberOf:1.2.840.113556.1.4.1941:=", nested)
 
 
 class CredentialsTest(unittest.TestCase):

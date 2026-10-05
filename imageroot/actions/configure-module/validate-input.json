@@ -9,6 +9,15 @@
             "http2https": true,
             "lets_encrypt": true,
             "database": "obsidiannotes"
+        },
+        {
+            "host": "livesync.domain.org",
+            "http2https": true,
+            "lets_encrypt": true,
+            "ad_enabled": true,
+            "ad_domain": "ad.domain.org",
+            "ad_group": "obsidian-users",
+            "ad_nested_groups": false
         }
     ],
     "type": "object",
@@ -40,6 +49,27 @@
             "description": "Database of the default account created on the first configuration; ignored afterwards (use add-account).",
             "pattern": "^[a-z][a-z0-9_$()+-]*$",
             "maxLength": 238
+        },
+        "ad_enabled": {
+            "type": "boolean",
+            "title": "Accounts from an AD group",
+            "description": "Create and lock sync accounts from the members of an AD group"
+        },
+        "ad_domain": {
+            "type": "string",
+            "title": "Account domain",
+            "description": "NS8 Active Directory account domain"
+        },
+        "ad_group": {
+            "type": "string",
+            "title": "AD group",
+            "description": "sAMAccountName of the group whose members get a sync account",
+            "maxLength": 256
+        },
+        "ad_nested_groups": {
+            "type": "boolean",
+            "title": "Nested groups",
+            "description": "Also include members of nested groups"
         }
     }
 }
