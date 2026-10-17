@@ -183,3 +183,11 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 change to `imageroot/`, `ui/` or `build-images.sh` must raise it; the
 *Validate* workflow checks this. After the tests on `main` pass, *Publish
 tested catalog version* tags the tested image with that version.
+
+## Minimum NS8 core version
+
+This module requires NS8 core **3.22.0** or newer. This conservative minimum
+matches the core version recorded by the existing successful QEMU installation
+[tests](https://github.com/Platypuschan/ns8-obsidian-livesync/actions/runs/37245993463);
+compatibility with older cores has not been verified. The module image
+declares this requirement in `org.nethserver.min-core`.
