@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -104,31 +104,58 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
   ui:
-    name: UI lint and build
+    name: UI lint, build and browser regressions
     runs-on: ubuntu-latest
+    env:
+      IBM_TELEMETRY_DISABLED: "true"
+      NS8_CORE_IMAGE: ghcr.io/nethserver/core:latest@sha256:91f910e7e247d5806ce63abc54914edd59558b0bd7669a2337b678c295f3b5c6
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Enable Corepack
-        run: corepack enable
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          # Keep in sync with NODE_IMAGE in build-images.sh
+          # Keep in sync with NODE_IMAGE in build-images.sh and ui/Containerfile
           node-version: "24.22.2"
-          cache: yarn
-          cache-dependency-path: ui/yarn.lock
 
-      - name: Install dependencies
-        run: yarn install --immutable
+      - name: Immutable production bootstrap, lint and build
+        run: ./build-ui.sh
         working-directory: ui
 
-      - name: Lint
-        run: yarn lint
+      - name: Enable project-pinned interactive Yarn
+        run: npm install --global --force "@yarnpkg/cli-dist@$(node -p 'require("./ui/package.json").packageManager.split("@")[1]')"
+
+      - name: Stack contracts
+        run: yarn test:stack
         working-directory: ui
 
-      - name: Build
-        run: yarn build
+      - name: Extract production NS8 host CSS without execution
+        run: .github/scripts/extract-core-css "$RUNNER_TEMP/ns8-core.css"
+
+      - name: Install pinned Playwright browser
+        run: yarn playwright install --with-deps chromium
         working-directory: ui
+
+      - name: Production browser regressions with real host CSS
+        run: NS8_CORE_CSS="$RUNNER_TEMP/ns8-core.css" yarn test:e2e
+        working-directory: ui
+
+      - name: Development bundle diagnostics and browser regressions
+        run: NS8_CORE_CSS="$RUNNER_TEMP/ns8-core.css" yarn test:e2e:dev
+        working-directory: ui
+
+      - name: Exact production Node image bootstrap
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          image="$(python3 -c 'import re; print(re.search(r"NODE_IMAGE=\"([^\"]+)\"", open("build-images.sh").read())[1])')"
+          podman run --rm -e IBM_TELEMETRY_DISABLED=true -v "$PWD:/src:Z" -w /src/ui "$image" ./build-ui.sh
+
+      - name: Developer image build
+        run: podman build --no-cache -t localhost/livesync-ui-dev:ci -f ui/Containerfile ui
+
+      - name: Actual nonroot dev build, watch and interactive serve
+        run: .github/scripts/test-ui-dev localhost/livesync-ui-dev:ci

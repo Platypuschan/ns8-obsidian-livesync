@@ -1,11 +1,8 @@
 #!/bin/bash
-
-if [[ -z "$1" ]]; then
-    echo "Missing parameter: append 'watch' or 'build'"
-elif [[ "$1" = "watch" ]]; then
-    yarn install && yarn watch
-elif [[ "$1" == "build" ]]; then
-    yarn install && yarn build
-else
-    echo "Parameter not recognized: '$1'. Only 'watch' or 'build' are allowed"
-fi
+set -Eeuo pipefail
+case "${1:-}" in
+  build) exec ./build-ui.sh ;;
+  watch) yarn install --immutable; exec yarn watch ;;
+  serve) yarn install --immutable; shift; exec yarn serve --host 0.0.0.0 --port 8080 "$@" ;;
+  *) echo "Append build, watch or serve" >&2; exit 2 ;;
+esac

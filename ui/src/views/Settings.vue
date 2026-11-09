@@ -3,7 +3,7 @@
   SPDX-License-Identifier: GPL-3.0-or-later
 -->
 <template>
-  <cv-grid fullWidth>
+  <cv-grid full-width>
     <cv-row>
       <cv-column class="page-title">
         <h2>{{ $t("settings.title") }}</h2>
@@ -15,7 +15,7 @@
           kind="error"
           :title="$t('action.get-configuration')"
           :description="error.getConfiguration"
-          :showCloseButton="false"
+          :show-close-button="false"
         />
       </cv-column>
     </cv-row>
@@ -24,56 +24,44 @@
         <cv-tile light>
           <cv-form @submit.prevent="configureModule">
             <cv-text-input
+              ref="host"
+              v-model.trim="host"
               :label="$t('settings.livesync_fqdn')"
               placeholder="livesync.example.org"
-              v-model.trim="host"
               class="mg-bottom"
-              :invalid-message="$t(error.host)"
+              :invalid-message="tKey(error.host)"
               :disabled="loading.getConfiguration || loading.configureModule"
-              ref="host"
             >
             </cv-text-input>
             <cv-toggle
+              v-model="isLetsEncryptEnabled"
               value="letsEncrypt"
               :label="$t('settings.lets_encrypt')"
-              v-model="isLetsEncryptEnabled"
               :disabled="loading.getConfiguration || loading.configureModule"
               class="mg-bottom"
             >
-              <template slot="text-left">{{
-                $t("settings.disabled")
-              }}</template>
-              <template slot="text-right">{{
-                $t("settings.enabled")
-              }}</template>
+              <template #text-left>{{ $t("settings.disabled") }}</template>
+              <template #text-right>{{ $t("settings.enabled") }}</template>
             </cv-toggle>
             <cv-toggle
+              v-model="isHttpToHttpsEnabled"
               value="httpToHttps"
               :label="$t('settings.http_to_https')"
-              v-model="isHttpToHttpsEnabled"
               :disabled="loading.getConfiguration || loading.configureModule"
               class="mg-bottom"
             >
-              <template slot="text-left">{{
-                $t("settings.disabled")
-              }}</template>
-              <template slot="text-right">{{
-                $t("settings.enabled")
-              }}</template>
+              <template #text-left>{{ $t("settings.disabled") }}</template>
+              <template #text-right>{{ $t("settings.enabled") }}</template>
             </cv-toggle>
             <cv-toggle
+              v-model="adEnabled"
               value="adEnabled"
               :label="$t('settings.ad_enabled')"
-              v-model="adEnabled"
               :disabled="loading.getConfiguration || loading.configureModule"
               class="mg-bottom"
             >
-              <template slot="text-left">{{
-                $t("settings.disabled")
-              }}</template>
-              <template slot="text-right">{{
-                $t("settings.enabled")
-              }}</template>
+              <template #text-left>{{ $t("settings.disabled") }}</template>
+              <template #text-right>{{ $t("settings.enabled") }}</template>
             </cv-toggle>
             <template v-if="adEnabled">
               <p class="mg-bottom helper">
@@ -84,46 +72,42 @@
                 kind="error"
                 :title="$t('action.list-user-domains')"
                 :description="error.listUserDomains"
-                :showCloseButton="false"
+                :show-close-button="false"
               />
               <NsComboBox
+                ref="ad_domain"
                 v-model="adDomain"
                 :options="adDomains"
                 auto-highlight
                 :title="$t('settings.ad_domain')"
                 :label="$t('settings.ad_domain_placeholder')"
-                :invalid-message="$t(error.ad_domain)"
+                :invalid-message="tKey(error.ad_domain)"
                 :disabled="
                   loading.getConfiguration ||
                   loading.configureModule ||
                   loading.listUserDomains
                 "
                 class="mg-bottom"
-                ref="ad_domain"
               />
               <cv-text-input
                 id="ad-group"
+                ref="ad_group"
+                v-model.trim="adGroup"
                 :label="$t('settings.ad_group')"
                 placeholder="obsidian-users"
-                v-model.trim="adGroup"
-                :invalid-message="$t(error.ad_group)"
+                :invalid-message="tKey(error.ad_group)"
                 :disabled="loading.getConfiguration || loading.configureModule"
                 class="mg-bottom"
-                ref="ad_group"
               />
               <cv-toggle
+                v-model="adNestedGroups"
                 value="adNestedGroups"
                 :label="$t('settings.ad_nested_groups')"
-                v-model="adNestedGroups"
                 :disabled="loading.getConfiguration || loading.configureModule"
                 class="mg-bottom"
               >
-                <template slot="text-left">{{
-                  $t("settings.disabled")
-                }}</template>
-                <template slot="text-right">{{
-                  $t("settings.enabled")
-                }}</template>
+                <template #text-left>{{ $t("settings.disabled") }}</template>
+                <template #text-right>{{ $t("settings.enabled") }}</template>
               </cv-toggle>
             </template>
             <cv-row v-if="error.configureModule">
@@ -132,11 +116,12 @@
                   kind="error"
                   :title="$t('action.configure-module')"
                   :description="error.configureModule"
-                  :showCloseButton="false"
+                  :show-close-button="false"
                 />
               </cv-column>
             </cv-row>
             <NsButton
+              type="submit"
               kind="primary"
               :icon="Save20"
               :loading="loading.configureModule"
@@ -158,12 +143,12 @@
             kind="warning"
             :title="$t('settings.https_warning_title')"
             :description="$t('settings.https_warning_description')"
-            :showCloseButton="false"
+            :show-close-button="false"
           />
           <cv-text-input
             id="livesync-uri"
             :label="$t('settings.server_uri')"
-            :value="url"
+            :model-value="url"
             readonly
             class="mg-bottom"
           />
@@ -173,9 +158,9 @@
               kind="error"
               :title="$t('settings.ad_sync_failed')"
               :description="adLastSync.error"
-              :showCloseButton="false"
+              :show-close-button="false"
             />
-            <p v-else-if="adLastSync" class="mg-bottom" id="ad-sync-status">
+            <p v-else-if="adLastSync" id="ad-sync-status" class="mg-bottom">
               {{
                 $t("settings.ad_sync_status", {
                   time: new Date(adLastSync.time * 1000).toLocaleString(),
@@ -188,7 +173,7 @@
               kind="error"
               :title="$t('action.sync-accounts')"
               :description="error.syncAccounts"
-              :showCloseButton="false"
+              :show-close-button="false"
             />
             <NsButton
               kind="secondary"
@@ -204,14 +189,14 @@
             kind="error"
             :title="$t('action.reset-database')"
             :description="error.resetDatabase"
-            :showCloseButton="false"
+            :show-close-button="false"
           />
           <NsInlineNotification
             v-if="error.removeAccount"
             kind="error"
             :title="$t('action.remove-account')"
             :description="error.removeAccount"
-            :showCloseButton="false"
+            :show-close-button="false"
           />
           <NsEmptyState
             v-if="!accounts.length"
@@ -226,14 +211,14 @@
             <cv-text-input
               :id="'account-username-' + account.username"
               :label="$t('settings.username')"
-              :value="account.username"
+              :model-value="account.username"
               readonly
             />
             <cv-text-input
               v-if="account.enabled"
               :id="'account-password-' + account.username"
               :label="$t('settings.password')"
-              :value="account.password"
+              :model-value="account.password"
               type="password"
               readonly
             />
@@ -241,13 +226,13 @@
               v-else
               :id="'account-password-' + account.username"
               :label="$t('settings.password')"
-              :value="$t('settings.account_locked')"
+              :model-value="$t('settings.account_locked')"
               readonly
             />
             <cv-text-input
               :id="'account-database-' + account.username"
               :label="$t('settings.database_name')"
-              :value="account.database"
+              :model-value="account.database"
               readonly
             />
             <div class="account-meta">
@@ -303,35 +288,35 @@
     <NsModal
       size="default"
       :visible="isAddModalShown"
-      :isLoading="loading.addAccount"
+      :is-loading="loading.addAccount"
       :primary-button-disabled="loading.addAccount"
-      :autoHideOff="loading.addAccount"
+      :auto-hide-off="loading.addAccount"
       @modal-hidden="isAddModalShown = false"
       @secondary-click="isAddModalShown = false"
       @primary-click="addAccount"
     >
-      <template slot="title">{{ $t("settings.add_account") }}</template>
-      <template slot="content">
+      <template #title>{{ $t("settings.add_account") }}</template>
+      <template #content>
         <cv-form @submit.prevent="addAccount">
           <cv-text-input
             id="new-account-username"
+            ref="username"
+            v-model.trim="newAccount.username"
             :label="$t('settings.username')"
             :helper-text="$t('settings.username_helper')"
-            v-model.trim="newAccount.username"
-            :invalid-message="$t(error.username)"
+            :invalid-message="tKey(error.username)"
             :disabled="loading.addAccount"
             class="mg-bottom"
-            ref="username"
           />
           <cv-text-input
             id="new-account-database"
+            ref="database"
+            v-model.trim="newAccount.database"
             :label="$t('settings.database_name')"
             :helper-text="$t('settings.database_helper')"
-            v-model.trim="newAccount.database"
-            :invalid-message="$t(error.database)"
+            :invalid-message="tKey(error.database)"
             :disabled="loading.addAccount"
             class="mg-bottom"
-            ref="database"
           />
         </cv-form>
         <NsInlineNotification
@@ -339,37 +324,37 @@
           kind="error"
           :title="$t('action.add-account')"
           :description="error.addAccount"
-          :showCloseButton="false"
+          :show-close-button="false"
         />
       </template>
-      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
-      <template slot="primary-button">{{ $t("settings.create") }}</template>
+      <template #secondary-button>{{ $t("settings.cancel") }}</template>
+      <template #primary-button>{{ $t("settings.create") }}</template>
     </NsModal>
     <!-- remove account -->
     <NsModal
       kind="danger"
       size="default"
       :visible="isRemoveModalShown"
-      :isLoading="loading.removeAccount"
+      :is-loading="loading.removeAccount"
       :primary-button-disabled="loading.removeAccount"
-      :autoHideOff="loading.removeAccount"
+      :auto-hide-off="loading.removeAccount"
       @modal-hidden="isRemoveModalShown = false"
       @secondary-click="isRemoveModalShown = false"
       @primary-click="removeAccount"
     >
-      <template slot="title">{{
+      <template #title>{{
         $t("settings.remove_account_title", {
           username: accountToRemove.username,
         })
       }}</template>
-      <template slot="content">
+      <template #content>
         <p class="mg-bottom">
           {{ $t("settings.remove_account_description") }}
         </p>
         <cv-checkbox
           id="remove-account-database"
-          value="deleteDatabase"
           v-model="deleteDatabase"
+          value="deleteDatabase"
           :label="
             $t('settings.remove_account_database', {
               database: accountToRemove.database,
@@ -381,43 +366,39 @@
           v-if="deleteDatabase"
           kind="warning"
           :title="$t('settings.remove_account_database_warning')"
-          :showCloseButton="false"
+          :show-close-button="false"
         />
       </template>
-      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
-      <template slot="primary-button">{{
-        $t("settings.remove_account")
-      }}</template>
+      <template #secondary-button>{{ $t("settings.cancel") }}</template>
+      <template #primary-button>{{ $t("settings.remove_account") }}</template>
     </NsModal>
     <!-- reset database -->
     <NsModal
       kind="danger"
       size="default"
       :visible="isResetModalShown"
-      :isLoading="loading.resetDatabase"
+      :is-loading="loading.resetDatabase"
       :primary-button-disabled="loading.resetDatabase"
-      :autoHideOff="loading.resetDatabase"
+      :auto-hide-off="loading.resetDatabase"
       @modal-hidden="isResetModalShown = false"
       @secondary-click="isResetModalShown = false"
       @primary-click="resetDatabase"
     >
-      <template slot="title">{{
+      <template #title>{{
         $t("settings.reset_database_title", {
           database: accountToReset.database,
         })
       }}</template>
-      <template slot="content">
+      <template #content>
         <NsInlineNotification
           kind="warning"
           :title="$t('settings.remove_account_database_warning')"
-          :showCloseButton="false"
+          :show-close-button="false"
         />
         <p>{{ $t("settings.reset_database_description") }}</p>
       </template>
-      <template slot="secondary-button">{{ $t("settings.cancel") }}</template>
-      <template slot="primary-button">{{
-        $t("settings.reset_database")
-      }}</template>
+      <template #secondary-button>{{ $t("settings.cancel") }}</template>
+      <template #primary-button>{{ $t("settings.reset_database") }}</template>
     </NsModal>
   </cv-grid>
 </template>
@@ -431,7 +412,7 @@ import {
   TaskService,
   IconService,
   PageTitleService,
-} from "@nethserver/ns8-ui-lib";
+} from "@/ns8";
 
 export default {
   name: "Settings",
@@ -513,31 +494,26 @@ export default {
     this.getConfiguration();
     this.listUserDomains();
   },
-  beforeRouteEnter(to, from, next) {
-    next((vm) => {
+  beforeRouteEnter() {
+    return (vm) => {
       vm.watchQueryData(vm);
       vm.urlCheckInterval = vm.initUrlBindingForApp(vm, vm.q.page);
-    });
+    };
   },
-  beforeRouteLeave(to, from, next) {
+  beforeRouteLeave() {
     clearInterval(this.urlCheckInterval);
-    next();
   },
   methods: {
     // Start a module task and route its events to the given handlers
     async runTask(action, data, handlers, extra) {
       const eventId = this.getUuid();
-      this.core.$root.$once(`${action}-aborted-${eventId}`, handlers.aborted);
-      this.core.$root.$once(
-        `${action}-completed-${eventId}`,
-        handlers.completed
-      );
-      if (handlers.validationFailed) {
-        this.core.$root.$once(
-          `${action}-validation-failed-${eventId}`,
-          handlers.validationFailed
-        );
-      }
+      this.subscribeTask(action, eventId, {
+        aborted: handlers.aborted,
+        completed: handlers.completed,
+        ...(handlers.validationFailed
+          ? { "validation-failed": handlers.validationFailed }
+          : {}),
+      });
       const res = await to(
         this.createModuleTaskForApp(this.instanceName, {
           action,
@@ -548,7 +524,7 @@ export default {
             ...extra,
             eventId,
           },
-        })
+        }),
       );
       return res[0];
     },
@@ -655,7 +631,7 @@ export default {
           }),
           description: this.$t("settings.configuring"),
           isNotificationHidden: false,
-        }
+        },
       );
       if (err) {
         console.error("error creating task configure-module", err);
@@ -718,7 +694,7 @@ export default {
           aborted: this.addAccountAborted,
           completed: this.addAccountCompleted,
           validationFailed: this.addAccountValidationFailed,
-        }
+        },
       );
       if (err) {
         console.error("error creating task add-account", err);
@@ -758,7 +734,7 @@ export default {
         {
           aborted: this.removeAccountAborted,
           completed: this.removeAccountCompleted,
-        }
+        },
       );
       if (err) {
         console.error("error creating task remove-account", err);
@@ -792,7 +768,7 @@ export default {
         {
           aborted: this.resetDatabaseAborted,
           completed: this.resetDatabaseCompleted,
-        }
+        },
       );
       if (err) {
         console.error("error creating task reset-database", err);
@@ -839,13 +815,12 @@ export default {
       this.error.listUserDomains = "";
       const action = "list-user-domains";
       const eventId = this.getUuid();
-      this.core.$root.$once(`${action}-aborted-${eventId}`, () => {
-        this.error.listUserDomains = this.$t("error.generic_error");
-        this.loading.listUserDomains = false;
-      });
-      this.core.$root.$once(
-        `${action}-completed-${eventId}`,
-        (taskContext, taskResult) => {
+      this.subscribeTask(action, eventId, {
+        aborted: () => {
+          this.error.listUserDomains = this.$t("error.generic_error");
+          this.loading.listUserDomains = false;
+        },
+        completed: (taskContext, taskResult) => {
           this.adDomains = taskResult.output.domains
             .filter((domain) => domain.schema === "ad")
             .map((domain) => ({
@@ -854,8 +829,8 @@ export default {
               value: domain.name,
             }));
           this.loading.listUserDomains = false;
-        }
-      );
+        },
+      });
       const res = await to(
         this.createClusterTaskForApp({
           action,
@@ -864,7 +839,7 @@ export default {
             isNotificationHidden: true,
             eventId,
           },
-        })
+        }),
       );
       if (res[0]) {
         console.error(`error creating task ${action}`, res[0]);

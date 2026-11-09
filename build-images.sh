@@ -19,21 +19,17 @@ repository_source="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:
 COUCHDB_TAG="3.5.3"
 # Keep in sync with the Node.js version used by .github/workflows/validate.yml
 NODE_IMAGE="docker.io/library/node:24.22.2"
-nodebuilder="nodebuilder-obsidian-livesync-${NODE_IMAGE##*:}"
-# Create a new empty container image
+# Each invocation owns its builder and bind mount; concurrent clones never reuse it.
+nodebuilder="nodebuilder-obsidian-livesync-$$"
 container=$(buildah from scratch)
-
-# Reuse an existing builder container for the same Node.js version, to speed up builds
-if ! buildah containers --format "{{.ContainerName}}" | grep -qx "${nodebuilder}"; then
-	echo "Pulling NodeJS runtime..."
-	buildah from --name "${nodebuilder}" -v "${PWD}:/usr/src:Z" "${NODE_IMAGE}"
-fi
+trap 'buildah rm "$nodebuilder" "$container" >/dev/null 2>&1 || true' EXIT
+buildah from --name "${nodebuilder}" -v "${PWD}:/usr/src:Z" "${NODE_IMAGE}"
 
 echo "Build static UI files with node..."
 buildah run \
 	--workingdir=/usr/src/ui \
 	"${nodebuilder}" \
-	sh -c "corepack enable && yarn install --immutable && yarn build"
+	./build-ui.sh
 
 # Add imageroot directory to the container image
 buildah add "${container}" imageroot /imageroot

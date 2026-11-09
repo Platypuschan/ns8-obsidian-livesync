@@ -1,5 +1,6 @@
 FROM node:24.22.2-bookworm
-RUN corepack enable
+# Devcontainer is built before package.json is mounted: provide interactive yarn.
+RUN npm install --global --force @yarnpkg/cli-dist@4.18.1
 WORKDIR /app
 EXPOSE 8080
 ENTRYPOINT ["./container-entrypoint.sh"]
