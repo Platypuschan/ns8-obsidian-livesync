@@ -9,7 +9,7 @@ Base: `3a2798b17faed6d5ca0758ea10a19aa7250514bd`. One native module bump: 0.3.1 
 | #10 | `7da3d3d0301b25eac9969b45a08df77d8b863179` | Robot Browser 19.15.1 integrated |
 | #11 | `a2728b5c41e3a3830004d681f08ec6030157dc75` | Official Renovate validation image 44.224.1 integrated |
 | #12 | `5dc2e4e51d0d0eb8d8a7428f8dc59eb9d8b03dc8` | Node 24.22.2 across all three consumers integrated |
-| #30 | `9c69704a55263f8fc2224b68726b34c464a289cc` | Separate later lock-maintenance batch; not implicitly covered by #8 |
+| #30 | `9c69704a55263f8fc2224b68726b34c464a289cc` | Later compatible lock-maintenance batch integrated after full review; includes #8 resolved upgrades plus transitive refresh/deduplication |
 
 No existing PR is merged or closed by this integration. Major UI updates are coordinated separately. Browser 21 (#29) is not included.
 
