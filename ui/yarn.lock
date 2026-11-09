@@ -2999,7 +2999,7 @@ __metadata:
     vue: "npm:^2.7.0"
     vue-axios: "npm:^3.2.4"
     vue-date-fns: "npm:^2.0.1"
-    vue-debounce: "npm:^4.0.0"
+    vue-debounce: "npm:^6.0.0"
     vue-i18n: "npm:^8.24.4"
     vue-router: "npm:^3.2.0"
     vuex: "npm:^3.4.0"
@@ -3117,12 +3117,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue-debounce@npm:^4.0.0":
-  version: 4.0.1
-  resolution: "vue-debounce@npm:4.0.1"
+"vue-debounce@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "vue-debounce@npm:6.0.0"
   peerDependencies:
-    vue: ">= 2.0.0"
-  checksum: 10c0/d27fb67ca583e20875760bed59223cec116ecbbd41605448f541f8262f10c8e9445c09755bc41759ebe0a7bf67bd5d6e79613f9cb3685bb36e7174472a027246
+    vue: ">= 3.0.0"
+  checksum: 10c0/dff21933cd5006676c0f282a7de1c3162deb227c89cd17244b3a12e7a450cf9971b6af761e3d6d017cae6be3136b3871b570343713ec279cdcc0cdd873625e0b
   languageName: node
   linkType: hard
 
