@@ -57,7 +57,8 @@
     {
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "UI dependencies (non-major)"
+      "groupName": "UI dependencies (non-major)",
+      "groupSlug": "ui-dependencies-non-major"
     },
     {
       "description": "Every image input, including lockfile-only maintenance, needs a new module release",
