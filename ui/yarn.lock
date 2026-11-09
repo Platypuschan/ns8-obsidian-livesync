@@ -2236,16 +2236,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lottie-web-vue@npm:^1.2.0":
-  version: 1.2.1
-  resolution: "lottie-web-vue@npm:1.2.1"
+"lottie-web-vue@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "lottie-web-vue@npm:3.0.1"
   dependencies:
-    lottie-web: "npm:^5.7.4"
-  checksum: 10c0/9605875c3edb89e957430d6d03fa575f4890347484b2090cc404bc8b6059e3a1cf87c8f7aeb052c7febf189ac073fb21ed92295b75c23ab917b1f1d8225a0f06
+    lottie-web: "npm:^5.12.2"
+  peerDependencies:
+    vue: ^3.3.0
+  checksum: 10c0/68bf0d0632c3cfdfd49b677bdde671d9a9f54b0e5003cd6ce8c7760288ed4527105d8f716f8612e01010a1f3647a9a95d8818d8d3ad2b3b563db372dea402d25
   languageName: node
   linkType: hard
 
-"lottie-web@npm:^5.7.4":
+"lottie-web@npm:^5.12.2":
   version: 5.13.0
   resolution: "lottie-web@npm:5.13.0"
   checksum: 10c0/b463ad462169df3f7e04b7f3716274e269842554f1d72b8303ca7245628f2512982a59ae31698b3d57fbcda886228ae160fcb2aa518c6cecd8a95974db2458ee
@@ -2992,7 +2994,7 @@ __metadata:
     eslint: "npm:^6.7.2"
     eslint-plugin-prettier: "npm:^3.3.1"
     eslint-plugin-vue: "npm:^6.2.2"
-    lottie-web-vue: "npm:^1.2.0"
+    lottie-web-vue: "npm:^3.0.0"
     prettier: "npm:^2.2.1"
     sass: "npm:^1.34.1"
     vite: "npm:^7.3.6"
