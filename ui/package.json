@@ -26,8 +26,8 @@
     "vuex": "^3.4.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/eslint-parser": "^7.11.0",
+    "@babel/core": "^8.0.0",
+    "@babel/eslint-parser": "^8.0.0",
     "@vitejs/plugin-vue2": "^2.3.4",
     "@vue/eslint-config-prettier": "^6.0.0",
     "eslint": "^6.7.2",
