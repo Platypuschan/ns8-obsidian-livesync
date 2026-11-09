@@ -12,7 +12,7 @@ IMAGE_URL="${2:?missing module image URL}"
 SCENARIO="${3:?missing test scenario}"
 PREVIOUS_IMAGE_URL="${PREVIOUS_IMAGE_URL:-}"
 SSH_KEYFILE="${SSH_KEYFILE:-${HOME}/.ssh/id_ecdsa}"
-RUNNER_IMAGE="ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable:19.11.0"
+RUNNER_IMAGE="ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable:19.15.1"
 CONTAINER_NAME="rf-livesync-${SCENARIO}"
 
 case "${SCENARIO}" in
