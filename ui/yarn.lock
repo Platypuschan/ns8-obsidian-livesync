@@ -147,7 +147,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.23.5, @babel/parser@npm:^7.29.13, @babel/parser@npm:^7.29.7":
+"@babel/parser@npm:^7.23.5, @babel/parser@npm:^7.29.12, @babel/parser@npm:^7.29.13, @babel/parser@npm:^7.29.7":
   version: 7.29.13
   resolution: "@babel/parser@npm:7.29.13"
   dependencies:
@@ -201,7 +201,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.37.0, @carbon/icon-helpers@npm:^10.85.0":
+"@carbon/icon-helpers@npm:^10.85.0":
   version: 10.85.0
   resolution: "@carbon/icon-helpers@npm:10.85.0"
   dependencies:
@@ -210,16 +210,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-vue@npm:10.63.0":
-  version: 10.63.0
-  resolution: "@carbon/icons-vue@npm:10.63.0"
-  dependencies:
-    "@carbon/icon-helpers": "npm:^10.37.0"
-  checksum: 10c0/ce0ba55604e3c378936f3964d707279ff1c060aafd044d507a8b14d2f3f9650cfedadd68fc9fd171da0d1a62391146187dc030996d88abea003172bba2b12eca
-  languageName: node
-  linkType: hard
-
-"@carbon/icons-vue@npm:^10.37.0":
+"@carbon/icons-vue@npm:^10.102.0, @carbon/icons-vue@npm:^10.37.0":
   version: 10.141.0
   resolution: "@carbon/icons-vue@npm:10.141.0"
   dependencies:
@@ -229,7 +220,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/telemetry@npm:0.1.0, @carbon/telemetry@npm:^0.1.0":
+"@carbon/telemetry@npm:0.1.0":
   version: 0.1.0
   resolution: "@carbon/telemetry@npm:0.1.0"
   bin:
@@ -238,16 +229,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/vue@npm:^2.40.0":
-  version: 2.45.1
-  resolution: "@carbon/vue@npm:2.45.1"
+"@carbon/vue@npm:^3.0.0":
+  version: 3.0.32
+  resolution: "@carbon/vue@npm:3.0.32"
   dependencies:
-    "@carbon/icons-vue": "npm:10.63.0"
-    "@carbon/telemetry": "npm:^0.1.0"
-    carbon-components: "npm:10.58.5"
-    flatpickr: "npm:4.6.13"
-    vue: "npm:^2.7.10"
-  checksum: 10c0/fb350fb841220d47977968d2cb4e1112a13c2609c781ae8472920e608096e17e38668d9098a3ceaefe247534fa6bf0f9c40ec9a42aaa85729f8a36fd32a573c5
+    "@carbon/icons-vue": "npm:^10.102.0"
+    "@ibm/telemetry-js": "npm:^1.5.1"
+    "@vueuse/core": "npm:^4.11.2"
+    carbon-components: "npm:^10.58.5"
+    eslint-plugin-prettier-vue: "npm:^4.2.0"
+    flatpickr: "npm:^4.6.13"
+    mitt: "npm:^3.0.0"
+  checksum: 10c0/73500616a29acd3d5d76edc81918820586a0afd08f279e6e01584f550a8ab7344adb71282851070997c42ef9e8865fd9c50cf14161b328214e3a5e27cf86802d
   languageName: node
   linkType: hard
 
@@ -433,7 +426,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ibm/telemetry-js@npm:^1.5.0":
+"@ibm/telemetry-js@npm:^1.5.0, @ibm/telemetry-js@npm:^1.5.1":
   version: 1.12.0
   resolution: "@ibm/telemetry-js@npm:1.12.0"
   bin:
@@ -478,7 +471,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jridgewell/sourcemap-codec@npm:^1.4.14, @jridgewell/sourcemap-codec@npm:^1.5.0":
+"@jridgewell/sourcemap-codec@npm:^1.4.14, @jridgewell/sourcemap-codec@npm:^1.5.0, @jridgewell/sourcemap-codec@npm:^1.5.5":
   version: 1.6.0
   resolution: "@jridgewell/sourcemap-codec@npm:1.6.0"
   checksum: 10c0/b5be700e45a775f218589c3466c4ffea630582b4988657652da464e5ab8a7d18bf928ee4fd2363fb346ede4bea9c6ff0bae05a538358c4565ece6199531b5f72
@@ -883,6 +876,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vue/compiler-core@npm:3.5.45":
+  version: 3.5.45
+  resolution: "@vue/compiler-core@npm:3.5.45"
+  dependencies:
+    "@babel/parser": "npm:^7.29.12"
+    "@vue/shared": "npm:3.5.45"
+    entities: "npm:^7.0.1"
+    estree-walker: "npm:^2.0.2"
+    source-map-js: "npm:^1.2.2"
+  checksum: 10c0/8b0b0502bf2d54fef851331d5552719c46b0d824c3ec4d25250260073bddc6e471ace5dc4753458c38c1815eb28883dcca2752e128c7845d0d1ddf611752a45b
+  languageName: node
+  linkType: hard
+
+"@vue/compiler-dom@npm:3.5.45":
+  version: 3.5.45
+  resolution: "@vue/compiler-dom@npm:3.5.45"
+  dependencies:
+    "@vue/compiler-core": "npm:3.5.45"
+    "@vue/shared": "npm:3.5.45"
+  checksum: 10c0/86c0c6f49d3f563d396f443b10a96e5a73581c0cc18025619c3c645f759d21ff1e08f3843a17a741c0d99723615ea6c50af6ccad678919a6cae74bf495e12493
+  languageName: node
+  linkType: hard
+
 "@vue/compiler-sfc@npm:2.7.16":
   version: 2.7.16
   resolution: "@vue/compiler-sfc@npm:2.7.16"
@@ -898,6 +914,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vue/compiler-sfc@npm:^3.2.37":
+  version: 3.5.45
+  resolution: "@vue/compiler-sfc@npm:3.5.45"
+  dependencies:
+    "@babel/parser": "npm:^7.29.12"
+    "@vue/compiler-core": "npm:3.5.45"
+    "@vue/compiler-dom": "npm:3.5.45"
+    "@vue/compiler-ssr": "npm:3.5.45"
+    "@vue/shared": "npm:3.5.45"
+    estree-walker: "npm:^2.0.2"
+    magic-string: "npm:^0.30.21"
+    postcss: "npm:^8.5.32"
+    source-map-js: "npm:^1.2.2"
+  checksum: 10c0/a864a5af7f419ac13b9a9b66c682d9351421cfe97d85f0a72118168bd7b2b1ec19b67a4dff6b2d537af760a4f3fa9a8084eca356a0c50f91299e8908f5466bcc
+  languageName: node
+  linkType: hard
+
+"@vue/compiler-ssr@npm:3.5.45":
+  version: 3.5.45
+  resolution: "@vue/compiler-ssr@npm:3.5.45"
+  dependencies:
+    "@vue/compiler-dom": "npm:3.5.45"
+    "@vue/shared": "npm:3.5.45"
+  checksum: 10c0/8fcf36d5905375a8eca37268115c0592f332b81316bbfdbf7408303bce189b85101fc8a9239b2a9ecffd408bc356927e76008ef8661ef328a1bdd6cc9998846f
+  languageName: node
+  linkType: hard
+
 "@vue/eslint-config-prettier@npm:^6.0.0":
   version: 6.0.0
   resolution: "@vue/eslint-config-prettier@npm:6.0.0"
@@ -908,6 +951,32 @@ __metadata:
     eslint-plugin-prettier: ^3.1.0
     prettier: ">= 1.13.0"
   checksum: 10c0/f2bf084dbc9e54ab2655a88654df7bd448ba84e8e04ff3edfe2020ef655782dca6ad6f4bcf3602f6d0d711f4b4667d84433bb23c11a69a2f9c72a424294709b7
+  languageName: node
+  linkType: hard
+
+"@vue/shared@npm:3.5.45":
+  version: 3.5.45
+  resolution: "@vue/shared@npm:3.5.45"
+  checksum: 10c0/19db97b4dcefe751462b13d4f9a7685833fc5f9817122979542ae42e4f18e0cf7bb828e7561b220c5ba48983fb4d1a17894e57f5a8b0de389a40a376ec2f9dac
+  languageName: node
+  linkType: hard
+
+"@vueuse/core@npm:^4.11.2":
+  version: 4.11.2
+  resolution: "@vueuse/core@npm:4.11.2"
+  dependencies:
+    "@vueuse/shared": "npm:4.11.2"
+    vue-demi: "npm:*"
+  checksum: 10c0/15d0e8ae7254bf6e691605c8fe96d7c6c8b87a1db6bdfcccdeac8b3c7e56cc9d38d1ccf332b4330bed931f294e83c1a9d12004ca371f09aee7634a8f8484fce5
+  languageName: node
+  linkType: hard
+
+"@vueuse/shared@npm:4.11.2":
+  version: 4.11.2
+  resolution: "@vueuse/shared@npm:4.11.2"
+  dependencies:
+    vue-demi: "npm:*"
+  checksum: 10c0/c0d12744c9de6381751aacc8024228af671604f2953c2ccebaf254e3213a35b909925085511829b24d3f0777004f4897945d8da14d743ce380dae85be4f24184
   languageName: node
   linkType: hard
 
@@ -1119,19 +1188,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"carbon-components@npm:10.58.5":
-  version: 10.58.5
-  resolution: "carbon-components@npm:10.58.5"
-  dependencies:
-    "@carbon/telemetry": "npm:0.1.0"
-    flatpickr: "npm:4.6.1"
-    lodash.debounce: "npm:^4.0.8"
-    warning: "npm:^3.0.0"
-  checksum: 10c0/8b95779e8f3d38da13b5e72d1ae2fb325705e236993447f16c65b4955138079ff29572eb5eb886c59c8f7bee9085f22c5a8a06453043dbc741724c6f59412100
-  languageName: node
-  linkType: hard
-
-"carbon-components@npm:^10.41.0":
+"carbon-components@npm:^10.41.0, carbon-components@npm:^10.58.5":
   version: 10.59.2
   resolution: "carbon-components@npm:10.59.2"
   dependencies:
@@ -1154,7 +1211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.1.0":
+"chalk@npm:^4.0.0, chalk@npm:^4.1.0":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -1377,6 +1434,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"entities@npm:^7.0.1":
+  version: 7.0.1
+  resolution: "entities@npm:7.0.1"
+  checksum: 10c0/b4fb9937bb47ecb00aaaceb9db9cdd1cc0b0fb649c0e843d05cf5dbbd2e9d2df8f98721d8b1b286445689c72af7b54a7242fc2d63ef7c9739037a8c73363e7ca
+  languageName: node
+  linkType: hard
+
 "env-paths@npm:^2.2.0":
   version: 2.2.1
   resolution: "env-paths@npm:2.2.1"
@@ -1532,6 +1596,18 @@ __metadata:
   bin:
     eslint-config-prettier-check: bin/cli.js
   checksum: 10c0/28fff0bd0cda1af62645955f916f4d5bc6922d6ec6a7c8c9dd207d3aab7a241ca1feb1ec787acea09a95956c7e5080a6310ed391b0ff218055378e1af24e2ff9
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-prettier-vue@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "eslint-plugin-prettier-vue@npm:4.2.0"
+  dependencies:
+    "@vue/compiler-sfc": "npm:^3.2.37"
+    chalk: "npm:^4.0.0"
+    prettier: "npm:^2.7.1"
+    prettier-linter-helpers: "npm:^1.0.0"
+  checksum: 10c0/09061e157fece48f6b1a55df3e10f48bf64001ad79e1e74fc10a43f7154d69e4af1e4b146c79fcf6bf185a02c21a43801320c7d8bf53060ef6d68995a6f16e00
   languageName: node
   linkType: hard
 
@@ -1703,6 +1779,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"estree-walker@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "estree-walker@npm:2.0.2"
+  checksum: 10c0/53a6c54e2019b8c914dc395890153ffdc2322781acf4bd7d1a32d7aedc1710807bdcd866ac133903d5629ec601fbb50abe8c2e5553c7f5a0afdd9b6af6c945af
+  languageName: node
+  linkType: hard
+
 "esutils@npm:^2.0.2":
   version: 2.0.3
   resolution: "esutils@npm:2.0.3"
@@ -1804,7 +1887,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"flatpickr@npm:4.6.13":
+"flatpickr@npm:^4.6.13":
   version: 4.6.13
   resolution: "flatpickr@npm:4.6.13"
   checksum: 10c0/0e027e72a2ce1716840a8c0bf9094f48d2665dc3f3024bf9604810c5bd7dd94aa830b133c5b5cfc0c330fc88939f33b54c8714515957f9d194c3a3bb7f75a1e2
@@ -2261,6 +2344,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"magic-string@npm:^0.30.21":
+  version: 0.30.21
+  resolution: "magic-string@npm:0.30.21"
+  dependencies:
+    "@jridgewell/sourcemap-codec": "npm:^1.5.5"
+  checksum: 10c0/299378e38f9a270069fc62358522ddfb44e94244baa0d6a8980ab2a9b2490a1d03b236b447eee309e17eb3bddfa482c61259d47960eb018a904f0ded52780c4a
+  languageName: node
+  linkType: hard
+
 "math-intrinsics@npm:^1.1.0":
   version: 1.1.0
   resolution: "math-intrinsics@npm:1.1.0"
@@ -2320,6 +2412,13 @@ __metadata:
   dependencies:
     minipass: "npm:^7.1.2"
   checksum: 10c0/5aad75ab0090b8266069c9aabe582c021ae53eb33c6c691054a13a45db3b4f91a7fb1bd79151e6b4e9e9a86727b522527c0a06ec7d45206b745d54cd3097bcec
+  languageName: node
+  linkType: hard
+
+"mitt@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "mitt@npm:3.0.1"
+  checksum: 10c0/3ab4fdecf3be8c5255536faa07064d05caa3dd332bd318ff02e04621f7b3069ca1de9106cfe8e7ced675abfc2bec2ce4c4ef321c4a1bb1fb29df8ae090741913
   languageName: node
   linkType: hard
 
@@ -2501,7 +2600,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.4.14, postcss@npm:^8.5.6":
+"postcss@npm:^8.4.14, postcss@npm:^8.5.32, postcss@npm:^8.5.6":
   version: 8.5.32
   resolution: "postcss@npm:8.5.32"
   dependencies:
@@ -2528,7 +2627,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^1.18.2 || ^2.0.0, prettier@npm:^2.2.1":
+"prettier@npm:^1.18.2 || ^2.0.0, prettier@npm:^2.2.1, prettier@npm:^2.7.1":
   version: 2.8.8
   resolution: "prettier@npm:2.8.8"
   bin:
@@ -2982,7 +3081,7 @@ __metadata:
     "@babel/core": "npm:^7.29.0"
     "@babel/eslint-parser": "npm:^7.11.0"
     "@carbon/icons-vue": "npm:^10.37.0"
-    "@carbon/vue": "npm:^2.40.0"
+    "@carbon/vue": "npm:^3.0.0"
     "@nethserver/ns8-ui-lib": "npm:^2.0.0"
     "@vitejs/plugin-vue2": "npm:^2.3.4"
     "@vue/eslint-config-prettier": "npm:^6.0.0"
@@ -3126,6 +3225,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vue-demi@npm:*":
+  version: 0.14.10
+  resolution: "vue-demi@npm:0.14.10"
+  peerDependencies:
+    "@vue/composition-api": ^1.0.0-rc.1
+    vue: ^3.0.0-0 || ^2.6.0
+  peerDependenciesMeta:
+    "@vue/composition-api":
+      optional: true
+  bin:
+    vue-demi-fix: bin/vue-demi-fix.js
+    vue-demi-switch: bin/vue-demi-switch.js
+  checksum: 10c0/a9ed8712fa36d01bc13c39757f95f30cebf42d557b99e94bff86d8660c81f2911b41220f7affc023d1ffcc19e13999e4a83019991e264787cca2c616e83aea48
+  languageName: node
+  linkType: hard
+
 "vue-eslint-parser@npm:^7.0.0":
   version: 7.11.0
   resolution: "vue-eslint-parser@npm:7.11.0"
@@ -3157,7 +3272,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue@npm:^2.7.0, vue@npm:^2.7.10":
+"vue@npm:^2.7.0":
   version: 2.7.16
   resolution: "vue@npm:2.7.16"
   dependencies:
