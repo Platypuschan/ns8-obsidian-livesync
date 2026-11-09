@@ -18,7 +18,7 @@ reponame="obsidian-livesync"
 repository_source="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-Platypuschan/ns8-obsidian-livesync}"
 COUCHDB_TAG="3.5.2"
 # Keep in sync with the Node.js version used by .github/workflows/validate.yml
-NODE_IMAGE="docker.io/library/node:24.20.0"
+NODE_IMAGE="docker.io/library/node:24.22.2"
 nodebuilder="nodebuilder-obsidian-livesync-${NODE_IMAGE##*:}"
 # Create a new empty container image
 container=$(buildah from scratch)
