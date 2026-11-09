@@ -2528,12 +2528,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^1.18.2 || ^2.0.0, prettier@npm:^2.2.1":
+"prettier@npm:^1.18.2 || ^2.0.0":
   version: 2.8.8
   resolution: "prettier@npm:2.8.8"
   bin:
     prettier: bin-prettier.js
   checksum: 10c0/463ea8f9a0946cd5b828d8cf27bd8b567345cf02f56562d5ecde198b91f47a76b7ac9eae0facd247ace70e927143af6135e8cf411986b8cb8478784a4d6d724a
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^3.0.0":
+  version: 3.9.10
+  resolution: "prettier@npm:3.9.10"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 10c0/0b3531593aa6fb36ac6baf629cb058bda472c59a6938774f931fe55283a07c62e6f56e621b043a82d8a3e21fc284c08c34f9e539fc70072635f79b7bae1a1067
   languageName: node
   linkType: hard
 
@@ -2993,7 +3002,7 @@ __metadata:
     eslint-plugin-prettier: "npm:^3.3.1"
     eslint-plugin-vue: "npm:^6.2.2"
     lottie-web-vue: "npm:^1.2.0"
-    prettier: "npm:^2.2.1"
+    prettier: "npm:^3.0.0"
     sass: "npm:^1.34.1"
     vite: "npm:^7.3.6"
     vue: "npm:^2.7.0"
