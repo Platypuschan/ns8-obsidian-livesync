@@ -57,7 +57,8 @@
     {
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "UI dependencies (non-major)"
+      "groupName": "UI dependencies (non-major)",
+      "groupSlug": "ui-dependencies-non-major"
     },
     {
       "description": "Every image input, including lockfile-only maintenance, needs a new module release",
@@ -70,6 +71,25 @@
           "bumpType": "patch"
         }
       ]
+    },
+    {
+      "description": "CI-only actions: automerge non-major once the required checks pass",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action", "workflow", "github-runner"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true
+    },
+    {
+      "description": "CouchDB patch releases merge themselves after the full QEMU suite; minor stays manual because a merge publishes a catalog version",
+      "matchPackageNames": ["couchdb"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Test tooling that is not shipped in the module image",
+      "matchPackageNames": ["ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable", "ghcr.io/renovatebot/renovate", "robotframework-sshlibrary", "PyYAML", "ldap3"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
     },
     {
       "matchUpdateTypes": ["major"],

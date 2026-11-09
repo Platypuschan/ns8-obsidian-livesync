@@ -16,7 +16,7 @@ repobase="${REPOBASE:-ghcr.io/platypuschan}"
 # "obsidian-livesync" from the repository name "ns8-obsidian-livesync".
 reponame="obsidian-livesync"
 repository_source="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-Platypuschan/ns8-obsidian-livesync}"
-COUCHDB_TAG="3.5.2"
+COUCHDB_TAG="3.5.3"
 # Keep in sync with the Node.js version used by .github/workflows/validate.yml
 NODE_IMAGE="docker.io/library/node:24.22.2"
 # Each invocation owns its builder and bind mount; concurrent clones never reuse it.
