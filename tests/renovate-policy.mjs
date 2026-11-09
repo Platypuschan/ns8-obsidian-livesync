@@ -30,6 +30,9 @@ for (const [id, file, name, sourcePattern] of [
   assert.ok(result.deps.some(d => d.depName === name && d.currentValue === version), JSON.stringify(result));
 }
 console.log('PASS native regex extraction: CouchDB, shell Node, CI Python pins');
+async function runtimeAutomerge(updateType) {
+  return (await rule({ manager: 'custom.regex', packageFile: 'build-images.sh', depName: 'couchdb', updateType })).automerge;
+}
 async function rule(input) {
   return applyPackageRules({ ...config, packageName: input.depName, ...input });
 }
@@ -46,6 +49,13 @@ for (const input of nodes) {
 assert.equal((await rule({ manager: 'npm', packageFile: 'ui/package.json', depName: 'vue', updateType: 'major' })).dependencyDashboardApproval, true);
 assert.equal((await rule({ manager: 'custom.regex', packageFile: 'build-images.sh', depName: 'couchdb', updateType: 'major' })).dependencyDashboardApproval, true);
 console.log('PASS cross-manager Node grouping and major approval');
+assert.equal(await runtimeAutomerge('patch'), true);
+assert.notEqual(await runtimeAutomerge('minor'), true);
+assert.notEqual(await runtimeAutomerge('major'), true);
+assert.equal((await rule({ manager: 'github-actions', packageFile: '.github/workflows/validate.yml', depName: 'actions/checkout', depType: 'action', updateType: 'minor' })).automerge, true);
+assert.notEqual((await rule({ manager: 'github-actions', packageFile: '.github/workflows/validate.yml', depName: 'actions/checkout', depType: 'action', updateType: 'major' })).automerge, true);
+assert.notEqual((await rule({ manager: 'npm', packageFile: 'ui/package.json', depName: 'vite', updateType: 'patch' })).automerge, true);
+console.log('PASS automerge limited to CouchDB patch, CI actions and test tooling');
 GlobalConfig.set({ localDir: process.cwd(), platform: 'local' });
 // Local SCM reads the actual checkout with git ls-files.
 setPlatformScmApi('local');
