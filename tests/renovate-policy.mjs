@@ -52,6 +52,16 @@ setPlatformScmApi('local');
 const oldVersion = (await fs.readFile('CATALOG_VERSION', 'utf8')).trim();
 const expected = oldVersion.replace(/(\d+)$/, n => String(Number(n) + 1));
 const ui = await rule({ manager: 'npm', packageFile: 'ui/package.json', depName: 'vite', updateType: 'patch' });
+// Replay native branch generation and the shared publisher/module-info slash-only mapping.
+// The original group name produced renovate/ui-dependencies-(non-major), an invalid OCI tag.
+const { generateBranchName } = await import(base + 'workers/repository/updates/branch-name.js');
+const { getConfig } = await import(base + 'config/defaults.js');
+const branchUpdate = { ...getConfig(), ...ui };
+generateBranchName(branchUpdate);
+const publishedTag = branchUpdate.branchName.replaceAll('/', '-');
+assert.match(publishedTag, /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/, 'shared publisher must receive an OCI-safe branch');
+assert.equal(branchUpdate.branchName, 'renovate/ui-dependencies-non-major');
+console.log('PASS native UI group branch -> shared publisher/module-info OCI tag');
 const runtime = await rule({ manager: 'custom.regex', packageFile: 'build-images.sh', depName: 'couchdb', updateType: 'patch' });
 const action = await rule({ manager: 'github-actions', packageFile: '.github/workflows/validate.yml', depName: 'actions/checkout', depType: 'action', updateType: 'minor' });
 const lock = await rule({ manager: 'npm', packageFile: 'ui/package.json', depType: 'lockFileMaintenance', updateType: 'lockFileMaintenance' });
