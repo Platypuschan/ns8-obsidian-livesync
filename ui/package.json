@@ -14,7 +14,7 @@
     "@nethserver/ns8-ui-lib": "^2.0.0",
     "await-to-js": "^3.0.0",
     "axios": "^1.18.1",
-    "carbon-components": "^10.41.0",
+    "carbon-components": "^11.0.0",
     "lottie-web-vue": "^1.2.0",
     "sass": "^1.34.1",
     "vue": "^2.7.0",
