@@ -1,0 +1,11 @@
+#!/bin/bash
+# Read files from the pinned published host image; never execute its entrypoint.
+set -Eeuo pipefail
+: "${NS8_CORE_IMAGE:?Set the digest-pinned NS8 core image}"
+[[ "$NS8_CORE_IMAGE" =~ @sha256:[a-f0-9]{64}$ ]] || { echo 'An immutable core digest is required' >&2; exit 1; }
+destination="${1:?destination CSS file required}"
+id="$(podman create --entrypoint /bin/true --image-volume=ignore "$NS8_CORE_IMAGE")"
+trap 'podman rm -f "$id" >/dev/null' EXIT
+podman cp "$id:/var/lib/nethserver/cluster/ui/css/core.css" "$destination"
+test -s "$destination"
+sha256sum "$destination"

@@ -1,0 +1,10 @@
+// Design tokens for component styles: Carbon v10 variables with NS8 branding.
+// Only variables and mixins are imported here, no CSS is emitted.
+
+@import "./ns8-branding";
+@import "carbon-components/scss/globals/scss/vars";
+
+// Values that are not Carbon tokens, from ns8-core core/ui/src/styles
+$breakpoint-medium: 671px;
+$ns-warning-color: #ff832b; // .ns-warning text
+$ns-warning-status-color: #eb991e; // status icons and progress bar

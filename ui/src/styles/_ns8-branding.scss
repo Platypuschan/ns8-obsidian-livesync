@@ -1,0 +1,19 @@
+// NethServer 8 brand colors, overriding Carbon v10 theme tokens.
+// Copied from ns8-core core/ui/src/styles/_branding.scss: keep them in sync.
+// Import this file before any Carbon SCSS, since Carbon tokens are !default.
+
+$interactive-01: #00a2de;
+$interactive-03: #00a2de;
+$interactive-04: #00a2de;
+$link-01: #00a2de;
+$focus: #00a2de;
+$link-02: #0090de;
+$support-04: #0090de;
+$hover-primary-text: #0090de;
+$inverse-link: #7cdcff;
+$inverse-support-04: #55d1ff;
+$hover-primary: #0094ca;
+$hover-tertiary: #0094ca;
+$active-primary: #0085b7;
+$active-tertiary: #0085b7;
+$highlight: #caf1ff;

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Exercise the context-free dev image and actual bind-mounted entrypoint.
+set -Eeuo pipefail
+image="${1:?developer image required}"
+root="$(git rev-parse --show-toplevel)"
+name="livesync-ui-dev-smoke-$$"
+cleanup() { podman rm -f "$name" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+pin="$(node -p 'require("./ui/package.json").packageManager.split("@")[1]')"
+test "$(podman run --rm --entrypoint yarn "$image" --version)" = "$pin"
+for mode in build watch serve; do
+  podman run -d --name "$name" --userns=keep-id --user "$(id -u):$(id -g)" \
+    --tmpfs /home/dev:rw,mode=1777 -e HOME=/home/dev -e IBM_TELEMETRY_DISABLED=true \
+    -v "$root/ui:/app:Z" "$image" "$mode" >/dev/null
+  ready=false
+  for attempt in $(seq 1 90); do
+    if [[ "$mode" == serve ]]; then
+      if podman exec "$name" node -e 'fetch("http://127.0.0.1:8080/").then(r=>{if(!r.ok) process.exit(1)}).catch(()=>process.exit(1))' >/dev/null 2>&1; then ready=true; break; fi
+    elif podman logs "$name" 2>&1 | grep -q 'built in'; then
+      ready=true; break
+    fi
+    sleep 2
+  done
+  if [[ "$ready" != true ]]; then podman logs "$name"; exit 1; fi
+  if [[ "$mode" == build ]]; then
+    test "$(podman wait "$name")" = 0
+  fi
+  cleanup
+  if podman container exists "$name"; then echo 'Owned container leaked' >&2; exit 1; fi
+  echo "PASS nonroot dev entrypoint: $mode"
+done
