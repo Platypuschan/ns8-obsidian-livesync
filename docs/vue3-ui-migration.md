@@ -1,7 +1,7 @@
 # Coordinated Vue 3 UI migration
 
-This branch is an independently testable **0.4.0 candidate**, not a release or
-live deployment. No old dependency PR is merged or closed by this change.
+This change was released as **0.4.0** (merged after an independent candidate
+phase); the old per-package dependency PRs were closed afterwards.
 The backend settings, action schemas, CouchDB image choice, AD membership and
 credential/recovery storage are unchanged.
 
@@ -34,7 +34,7 @@ remain separate integration decisions. This branch does not change either.
 
 Also removed: Vue2-only vue-date-fns, @vitejs/plugin-vue2, obsolete crypto shim,
 and vue-axios (axios is explicitly injected without its unnecessary UMD shim).
-Yarn is pinned by packageManager, currently4.18.0; all builds use immutable
+Yarn is pinned by packageManager, currently 4.18.1; all builds use immutable
 installation. Node is24.22.2 in production, developer recipe and CI.
 
 ## NS8 bridge and host contract
@@ -133,7 +133,7 @@ This remains **draft**, with these gates explicitly open:
    PR31's CouchDB3.5.3, OCI-safe Renovate groupSlug, policy/runtime updates and
    reviewed lock/toolchain intent when resolving overlapping files; keep the
    coordinated migration version **0.4.0**, not PR31's **0.3.2**. Re-run all
-   gates after that integration. Yarn on this candidate is4.18.0, not PR31's4.18.1.
+   gates after that integration. Yarn is 4.18.1 after merging main.
 5. Carbon11 is deliberately deferred pending host/design-system compatibility;
    #22 runner and #29 Robot Browser remain separate. No original PR is merged
    or closed, no automerge or branch-protection bypass is enabled.
