@@ -49,6 +49,12 @@ for (const input of nodes) {
 assert.equal((await rule({ manager: 'npm', packageFile: 'ui/package.json', depName: 'vue', updateType: 'major' })).dependencyDashboardApproval, true);
 assert.equal((await rule({ manager: 'custom.regex', packageFile: 'build-images.sh', depName: 'couchdb', updateType: 'major' })).dependencyDashboardApproval, true);
 console.log('PASS cross-manager Node grouping and major approval');
+for (const updateType of ['patch', 'minor', 'major']) {
+  const carbon = await rule({ manager: 'npm', packageFile: 'ui/package.json', depName: 'carbon-components', updateType });
+  assert.equal(carbon.allowedVersions, '<11', 'Carbon 11 removes the SCSS paths consumed by this UI');
+  assert.notEqual(carbon.automerge, true);
+}
+console.log('PASS Carbon 10 compatibility ceiling; updates remain manual');
 assert.equal(await runtimeAutomerge('patch'), true);
 assert.notEqual(await runtimeAutomerge('minor'), true);
 assert.notEqual(await runtimeAutomerge('major'), true);
