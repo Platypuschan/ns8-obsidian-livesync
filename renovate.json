@@ -92,6 +92,13 @@
       "automerge": true
     },
     {
+      "description": "Carbon 11 removes the Carbon 10 SCSS import paths used by src/styles/_carbon-utils.scss; migrate styles and verify host-CSS browser regressions before lifting this ceiling",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["carbon-components"],
+      "allowedVersions": "<11",
+      "automerge": false
+    },
+    {
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true,
       "automerge": false
