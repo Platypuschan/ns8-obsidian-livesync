@@ -11,14 +11,14 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^build-images\\.sh$/"],
-      "matchStrings": ["COUCHDB_TAG=\"(?<currentValue>[^\"]+)\""],
+      "matchStrings": ["COUCHDB_TAG=\"(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[a-fA-F0-9]{64}))?\""],
       "depNameTemplate": "couchdb",
       "datasourceTemplate": "docker"
     },
     {
       "customType": "regex",
       "managerFilePatterns": ["/^build-images\\.sh$/"],
-      "matchStrings": ["NODE_IMAGE=\"docker.io/library/node:(?<currentValue>[^\"]+)\""],
+      "matchStrings": ["NODE_IMAGE=\"docker.io/library/node:(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[a-fA-F0-9]{64}))?\""],
       "depNameTemplate": "node",
       "datasourceTemplate": "docker"
     },
@@ -31,7 +31,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^test-module\\.sh$/"],
-      "matchStrings": ["RUNNER_IMAGE=\"(?<depName>ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable):(?<currentValue>[^\"]+)\""],
+      "matchStrings": ["RUNNER_IMAGE=\"(?<depName>ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable):(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[a-fA-F0-9]{64}))?\""],
       "datasourceTemplate": "docker"
     },
     {

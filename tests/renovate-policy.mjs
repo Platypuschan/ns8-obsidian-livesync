@@ -23,13 +23,28 @@ for (const [id, file, name, sourcePattern] of [
   ['RUNNER_IMAGE', 'test-module.sh', 'ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable', /RUNNER_IMAGE="[^":]+(?:\/[^":]+)*:([^"]+)"/],
   ['robotframework-sshlibrary', 'test-module.sh', 'robotframework-sshlibrary', /robotframework-sshlibrary==([0-9.]+)/],
 ]) {
-  const version = (await fs.readFile(file, 'utf8')).match(sourcePattern)[1];
+  const version = (await fs.readFile(file, 'utf8')).match(sourcePattern)[1].split('@')[0];
   const manager = managers.find(m => JSON.stringify(m).includes(id));
   assert.ok(manager, `missing manager ${id}`);
   const result = await extractPackageFile(await fs.readFile(file, 'utf8'), file, manager);
   assert.ok(result.deps.some(d => d.depName === name && d.currentValue === version), JSON.stringify(result));
 }
 console.log('PASS native regex extraction: CouchDB, shell Node, CI Python pins');
+for (const [id, file, fixture, tag] of [
+  ['COUCHDB_TAG', 'build-images.sh', 'COUCHDB_TAG="3.5.3"', '3.5.3'],
+  ['NODE_IMAGE', 'build-images.sh', 'NODE_IMAGE="docker.io/library/node:24.22.2"', '24.22.2'],
+  ['RUNNER_IMAGE', 'test-module.sh', 'RUNNER_IMAGE="ghcr.io/marketsquare/robotframework-browser/rfbrowser-stable:19.10.1"', '19.10.1'],
+]) {
+  const manager = managers.find(m => JSON.stringify(m).includes(id));
+  for (const digest of [undefined, 'sha256:' + 'a'.repeat(64)]) {
+    const content = digest ? fixture.replace(/"$/, `@${digest}"`) : fixture;
+    const result = await extractPackageFile(content, file, manager);
+    assert.equal(result?.deps.length, 1, id);
+    assert.equal(result.deps[0].currentValue, tag, id);
+    assert.equal(result.deps[0].currentDigest, digest, id);
+    console.log(`PASS native ${id}: ${digest ? 'tag+digest' : 'tag-only'}`);
+  }
+}
 async function runtimeAutomerge(updateType) {
   return (await rule({ manager: 'custom.regex', packageFile: 'build-images.sh', depName: 'couchdb', updateType })).automerge;
 }
