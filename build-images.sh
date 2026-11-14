@@ -18,7 +18,7 @@ reponame="obsidian-livesync"
 repository_source="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-Platypuschan/ns8-obsidian-livesync}"
 COUCHDB_TAG="3.5.3"
 # Keep in sync with the Node.js version used by .github/workflows/validate.yml
-NODE_IMAGE="docker.io/library/node:24.22.2"
+NODE_IMAGE="docker.io/library/node:24.22.3"
 # Each invocation owns its builder and bind mount; concurrent clones never reuse it.
 nodebuilder="nodebuilder-obsidian-livesync-$$"
 container=$(buildah from scratch)
