@@ -119,7 +119,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           # Keep in sync with NODE_IMAGE in build-images.sh and ui/Containerfile
-          node-version: "24.22.2"
+          node-version: "24.22.3"
 
       - name: Immutable production bootstrap, lint and build
         run: ./build-ui.sh
